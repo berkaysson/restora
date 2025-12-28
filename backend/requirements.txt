@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+websockets
+python-multipart
+surya-ocr
+opencv-python
+numpy
+Pillow
+pyspellchecker
+pypdfium2
