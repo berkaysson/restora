@@ -77,18 +77,18 @@ function AppContent() {
     }
   };
 
-  const handleOpenFile = async (filename: string) => {
+  const handleOpenFile = async (jobId: string) => {
     setLoading(true);
     setIsFileListOpen(false);
-    addLog(`Frontend: Opening existing file ${filename}`, "frontend");
+    addLog(`Frontend: Opening existing job ${jobId}`, "frontend");
     try {
       const res = await axios.post(
-        `http://localhost:8000/process-existing/${filename}`
+        `http://localhost:8000/process-existing/${jobId}`
       );
       processResponse(res);
     } catch (err) {
       console.error(err);
-      addLog(`Frontend: Error opening file - ${err}`, "frontend");
+      addLog(`Frontend: Error opening job - ${err}`, "frontend");
       alert(`Hata: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setLoading(false);

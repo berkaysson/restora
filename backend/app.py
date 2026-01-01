@@ -1,11 +1,14 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import shutil, os, time
+import shutil, os, time, uuid
 from database import init_db, get_db_connection
 from ocr_engine import process_page
 
 from spellchecker import SpellChecker
+
+from logger import log_manager
+from fastapi import Request, WebSocket, WebSocketDisconnect
 
 app = FastAPI()
 
@@ -23,9 +26,6 @@ app.add_middleware(
 
 # Resimleri frontend'e sunmak için statik yol
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-from logger import log_manager
-from fastapi import Request, WebSocket, WebSocketDisconnect
 
 
 @app.websocket("/ws/logs")
@@ -72,14 +72,18 @@ async def startup():
 
 @app.post("/upload")
 async def upload_pdf_page(file: UploadFile = File(...)):
+    job_id = str(uuid.uuid4())
+    job_dir = f"uploads/{job_id}"
+    os.makedirs(job_dir, exist_ok=True)
+
     await log_manager.log(
-        f"Starting upload for file: {file.filename} (Type: {file.content_type})",
+        f"Starting upload for file: {file.filename} (Type: {file.content_type}, Job ID: {job_id})",
         "backend",
     )
 
     # Check file size (approximate)
     file_size = 0
-    file_path = f"uploads/{file.filename}"
+    file_path = f"{job_dir}/{file.filename}"
 
     try:
         with open(file_path, "wb") as buffer:
@@ -116,6 +120,7 @@ async def upload_pdf_page(file: UploadFile = File(...)):
 
         return {
             "status": "success",
+            "job_id": job_id,
             "clean_image": clean_path,
             "text": text,
             "layout": layout,
@@ -132,33 +137,87 @@ async def list_uploads():
     if not os.path.exists(uploads_dir):
         return []
 
-    files = []
-    for filename in os.listdir(uploads_dir):
-        if os.path.isfile(os.path.join(uploads_dir, filename)):
-            files.append(filename)
+    jobs = []
 
-    return {"files": files}
+    # Iterate over directories in uploads/
+    with os.scandir(uploads_dir) as entries:
+        for entry in entries:
+            if entry.is_dir():
+                job_id = entry.name
+                job_path = entry.path
+
+                # Default values
+                upload_date = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(entry.stat().st_mtime)
+                )
+                original_file = None
+                processed_files = []
+
+                # Scan files inside the job directory
+                files_in_job = os.listdir(job_path)
+                for f in files_in_job:
+                    full_path = f"uploads/{job_id}/{f}"
+                    if "_clean" in f or f.endswith(".json"):
+                        processed_files.append(full_path)
+                    else:
+                        # Assume the file without _clean and not .json is the original
+                        original_file = full_path
+
+                if original_file:
+                    jobs.append(
+                        {
+                            "id": job_id,
+                            "upload_date": upload_date,
+                            "original_file": original_file,
+                            "processed_files": processed_files,
+                        }
+                    )
+
+    # Sort by upload date desc
+    jobs.sort(key=lambda x: x["upload_date"], reverse=True)
+    return {"jobs": jobs}
 
 
-@app.delete("/delete-upload/{filename}")
-async def delete_upload(filename: str):
-    file_path = os.path.join("uploads", filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        await log_manager.log(f"Deleted file: {filename}", "backend")
-        return {"status": "success", "message": f"{filename} deleted"}
+@app.delete("/delete-upload/{job_id}")
+async def delete_upload(job_id: str):
+    job_dir = os.path.join("uploads", job_id)
+    if os.path.exists(job_dir) and os.path.isdir(job_dir):
+        try:
+            shutil.rmtree(job_dir)
+            await log_manager.log(f"Deleted job directory: {job_id}", "backend")
+            return {"status": "success", "message": f"Job {job_id} deleted"}
+        except Exception as e:
+            return {"status": "error", "message": f"Failed to delete: {e}"}
     else:
-        return {"status": "error", "message": "File not found"}
+        return {"status": "error", "message": "Job not found"}
 
 
-@app.post("/process-existing/{filename}")
-async def process_existing_file(filename: str):
-    file_path = os.path.join("uploads", filename)
-    if not os.path.exists(file_path):
-        return {"status": "error", "message": "File not found"}
+@app.post("/process-existing/{job_id}")
+async def process_existing_file(job_id: str):
+    job_dir = os.path.join("uploads", job_id)
+    if not os.path.exists(job_dir):
+        return {"status": "error", "message": "Job not found"}
+
+    # Find original file
+    original_file = None
+    # Check if directory exists before listing
+    if os.path.isdir(job_dir):
+        for f in os.listdir(job_dir):
+            if "_clean" not in f and not f.endswith(".json"):
+                original_file = f
+                break
+
+    if not original_file:
+        return {
+            "status": "error",
+            "message": "Original file not found in job directory",
+        }
+
+    file_path = os.path.join(job_dir, original_file)
 
     await log_manager.log(
-        f"Starting processing for existing file: {filename}", "backend"
+        f"Starting processing for existing job: {job_id}, file: {original_file}",
+        "backend",
     )
 
     try:
@@ -183,6 +242,7 @@ async def process_existing_file(filename: str):
 
         return {
             "status": "success",
+            "job_id": job_id,
             "clean_image": clean_path,
             "text": text,
             "layout": layout,

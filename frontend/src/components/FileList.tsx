@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { X, Trash2, FileText, Loader2 } from "lucide-react";
+import { X, Trash2, FileText, Loader2, Calendar } from "lucide-react";
+import type { UploadJob } from "../types";
 
 interface FileListProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (filename: string) => void;
+  onSelect: (jobId: string) => void;
 }
 
 export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
-  const [files, setFiles] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<UploadJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -23,7 +24,7 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
     setLoading(true);
     try {
       const res = await axios.get("http://localhost:8000/list-uploads");
-      setFiles(res.data.files);
+      setJobs(res.data.jobs);
     } catch (error) {
       console.error("Error fetching files:", error);
     } finally {
@@ -31,18 +32,22 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
     }
   };
 
-  const handleDelete = async (filename: string) => {
-    if (!confirm(`Delete ${filename}?`)) return;
-    setDeleting(filename);
+  const handleDelete = async (jobId: string) => {
+    if (!confirm(`Are you sure you want to delete this job?`)) return;
+    setDeleting(jobId);
     try {
-      await axios.delete(`http://localhost:8000/delete-upload/${filename}`);
-      setFiles(files.filter((f) => f !== filename));
+      await axios.delete(`http://localhost:8000/delete-upload/${jobId}`);
+      setJobs(jobs.filter((j) => j.id !== jobId));
     } catch (error) {
-      console.error("Error deleting file:", error);
-      alert("Error deleting file");
+      console.error("Error deleting job:", error);
+      alert("Error deleting job");
     } finally {
       setDeleting(null);
     }
+  };
+
+  const getFileName = (path: string) => {
+    return path.split("/").pop() || path;
   };
 
   if (!isOpen) return null;
@@ -52,7 +57,7 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
       <div className="w-full max-w-md overflow-hidden duration-200 bg-gray-900 border border-gray-800 shadow-2xl rounded-xl animate-in fade-in zoom-in">
         <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
           <h2 className="text-lg font-semibold text-white">
-            Yüklenen Dosyalar
+            Yüklenen İşler (Jobs)
           </h2>
           <button
             onClick={onClose}
@@ -67,39 +72,46 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
             <div className="flex justify-center p-4">
               <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
             </div>
-          ) : files.length === 0 ? (
+          ) : jobs.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              Dosya bulunamadı
+              Dosya/İş bulunamadı
             </div>
           ) : (
             <ul className="space-y-2">
-              {files.map((file) => (
+              {jobs.map((job) => (
                 <li
-                  key={file}
+                  key={job.id}
                   className="flex items-center justify-between p-3 transition-colors border border-gray-800 rounded-lg bg-gray-950/50 hover:border-indigo-500/30 group"
                 >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <FileText className="w-4 h-4 text-indigo-400 transition-colors shrink-0 group-hover:text-indigo-300" />
-                    <span
-                      className="text-sm text-gray-300 truncate"
-                      title={file}
-                    >
-                      {file}
-                    </span>
+                  <div className="flex flex-col gap-1 overflow-hidden">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-indigo-400 transition-colors shrink-0 group-hover:text-indigo-300" />
+                      <span
+                        className="text-sm font-medium text-gray-300 truncate"
+                        title={job.original_file}
+                      >
+                        {getFileName(job.original_file)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <Calendar className="w-3 h-3" />
+                      <span>{job.upload_date}</span>
+                    </div>
                   </div>
+
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => onSelect(file)}
+                      onClick={() => onSelect(job.id)}
                       className="px-3 py-1.5 text-xs font-medium text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 rounded-md transition-colors"
                     >
                       Aç
                     </button>
                     <button
-                      onClick={() => handleDelete(file)}
-                      disabled={deleting === file}
+                      onClick={() => handleDelete(job.id)}
+                      disabled={deleting === job.id}
                       className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
                     >
-                      {deleting === file ? (
+                      {deleting === job.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Trash2 className="w-4 h-4" />

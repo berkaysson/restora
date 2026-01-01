@@ -21,3 +21,10 @@ export interface PageData {
   layout: OCRResult; // JSON string ise parse edilmeli
   typos?: string[];
 }
+
+export interface UploadJob {
+  id: string;
+  upload_date: string;
+  original_file: string;
+  processed_files: string[];
+}

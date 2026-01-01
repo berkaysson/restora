@@ -14,7 +14,7 @@ export const Logs = () => {
   return (
     <div className="flex flex-col h-full bg-gray-950/90 font-mono text-xs shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
         <div className="flex items-center gap-2 text-gray-400">
           <Terminal className="w-4 h-4" />
           <span className="font-bold tracking-wider uppercase">
@@ -23,7 +23,7 @@ export const Logs = () => {
         </div>
         <button
           onClick={clearLogs}
-          className="p-1 transition-colors rounded hover:bg-gray-800 hover:text-red-400 text-gray-500"
+          className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-red-400"
           title="Clear Logs"
         >
           <Trash2 className="w-4 h-4" />
@@ -31,9 +31,9 @@ export const Logs = () => {
       </div>
 
       {/* Log List */}
-      <div className="flex-1 p-4 overflow-auto space-y-1 custom-scrollbar">
+      <div className="flex-1 p-4 space-y-1 overflow-auto custom-scrollbar">
         {logs.length === 0 ? (
-          <div className="text-gray-600 italic select-none">
+          <div className="italic text-gray-600 select-none">
             No logs yet...等待 operations...
           </div>
         ) : (
