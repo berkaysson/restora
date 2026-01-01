@@ -16,6 +16,7 @@ export interface OCRResult {
 }
 
 export interface PageData {
+  job_id: string;
   clean_image: string;
   text: string;
   layout: OCRResult; // JSON string ise parse edilmeli

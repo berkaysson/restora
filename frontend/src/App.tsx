@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Loader2,
   FolderOpen,
+  Trash2,
 } from "lucide-react";
 import { FileList } from "./components/FileList";
 
@@ -95,6 +96,35 @@ function AppContent() {
     }
   };
 
+  const handleClear = async () => {
+    if (!data) return;
+
+    if (
+      !window.confirm(
+        "Mevcut çalışmayı temizlemek ve dosyayı sunucudan silmek istediğinize emin misiniz?"
+      )
+    ) {
+      return;
+    }
+
+    const jobId = data.job_id;
+    addLog(
+      `Frontend: Clearing workspace and removing job ${jobId}`,
+      "frontend"
+    );
+
+    try {
+      await axios.delete(`http://localhost:8000/delete-upload/${jobId}`);
+      addLog(`Frontend: Job ${jobId} deleted from server.`, "frontend");
+    } catch (err) {
+      console.error(err);
+      addLog(`Frontend: Error deleting job - ${err}`, "frontend");
+    } finally {
+      setData(null);
+      setHighlightIndex(null);
+    }
+  };
+
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -166,6 +196,17 @@ function AppContent() {
               accept="image/*,.pdf"
             />
           </label>
+
+          {data && (
+            <button
+              onClick={handleClear}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 transition-all bg-red-900/20 border border-red-900/50 rounded-lg hover:bg-red-900/30 hover:text-red-300 active:scale-95"
+              title="Mevcut çalışmayı temizle ve dosyayı sil"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Temizle</span>
+            </button>
+          )}
         </div>
       </div>
 
