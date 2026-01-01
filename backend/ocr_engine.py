@@ -47,7 +47,10 @@ async def process_page(image_path: str):
             raise e
 
     # 1. OpenCV Temizlik (Adaptive Threshold)
-    img = cv2.imread(image_path)
+    # cv2.imread non-ASCII path'lerde (Türkçe karakterler) hata verebiliyor.
+    # Bu yüzden dosyayı numpy ile okuyup decode ediyoruz.
+    img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
     if img is None:
         error_msg = f"Görüntü okunamadı: {image_path}"
         await log_manager.log(f"OCR Engine Error: {error_msg}", "backend")
@@ -62,7 +65,11 @@ async def process_page(image_path: str):
     clean_path = image_path.replace(".jpg", "_clean.jpg").replace(
         ".png", "_clean.jpg"
     )  # Uzantı desteği
-    cv2.imwrite(clean_path, clean_img)
+
+    # cv2.imwrite yerine Unicode destekli kayıt:
+    _, buffer = cv2.imencode(".jpg", clean_img)
+    buffer.tofile(clean_path)
+
     await log_manager.log(
         f"OCR Engine: OpenCV cleaning completed. Saved to {clean_path}", "backend"
     )
