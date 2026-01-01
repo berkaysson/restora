@@ -1,30 +1,50 @@
 import cv2
 import numpy as np
-from surya.ocr import run_ocr
-from surya.model.detection import segformer
-from surya.model.recognition.model import load_model
-from surya.model.recognition.processor import load_processor
 from PIL import Image
 import pypdfium2 as pdfium
 import os
-
-# Modelleri GPU'ya yükle (Global)
-try:
-    det_processor, det_model = segformer.load_processor(), segformer.load_model()
-    rec_model, rec_processor = load_model(), load_processor()
-except Exception as e:
-    print(f"Model yükleme hatası (GPU/CPU sorunu olabilir): {e}")
-    # Fallback or exit logic could go here
-    det_processor, det_model = None, None
-    rec_model, rec_processor = None, None
-
+import time
 from logger import log_manager
+
+# Global placeholders for models
+foundation_predictor = None
+rec_predictor = None
+det_predictor = None
+
+# Try to import and load Surya models safely
+try:
+    from surya.foundation import FoundationPredictor
+    from surya.recognition import RecognitionPredictor
+    from surya.detection import DetectionPredictor
+
+    try:
+        # Initialize predictors globally to load models once
+        print("Loading Surya models...")
+        foundation_predictor = FoundationPredictor()
+        rec_predictor = RecognitionPredictor(foundation_predictor)
+        det_predictor = DetectionPredictor()
+        print("Surya models loaded successfully.")
+    except Exception as e:
+        print(f"Model loading error (GPU/CPU issue): {e}")
+
+except ImportError:
+    print("CRITICAL ERROR: 'surya-ocr' library is outdated or missing modules.")
+    print("Please run: pip install --upgrade surya-ocr")
 
 
 async def process_page(image_path: str):
+    start_time = time.time()
     await log_manager.log(
         f"OCR Engine: Starting processing for {image_path}", "backend"
     )
+
+    if not foundation_predictor or not rec_predictor or not det_predictor:
+        await log_manager.log(
+            "OCR Engine Warning: One or more Surya models are NOT loaded. Accuracy will be zero.",
+            "backend",
+        )
+    else:
+        await log_manager.log("OCR Engine: Surya models are ready.", "backend")
 
     # 0. PDF Check & Conversion
     if image_path.lower().endswith(".pdf"):
@@ -49,10 +69,19 @@ async def process_page(image_path: str):
     # 1. OpenCV Temizlik (Adaptive Threshold)
     # cv2.imread non-ASCII path'lerde (Türkçe karakterler) hata verebiliyor.
     # Bu yüzden dosyayı numpy ile okuyup decode ediyoruz.
-    img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+    try:
+        img_bytes = np.fromfile(image_path, dtype=np.uint8)
+        img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
+        if img is None:
+            raise ValueError("Image decode failed")
 
-    if img is None:
-        error_msg = f"Görüntü okunamadı: {image_path}"
+        height, width, channels = img.shape
+        await log_manager.log(
+            f"OCR Engine: Image loaded. Resolution: {width}x{height}, Channels: {channels}",
+            "backend",
+        )
+    except Exception as e:
+        error_msg = f"Görüntü okunamadı: {image_path}. Hata: {e}"
         await log_manager.log(f"OCR Engine Error: {error_msg}", "backend")
         raise ValueError(error_msg)
 
@@ -76,25 +105,53 @@ async def process_page(image_path: str):
 
     # 2. Surya OCR
     pil_img = Image.open(clean_path)
+    full_text = ""
+    layout_json = {}
 
-    if det_model and rec_model:
+    if rec_predictor and det_predictor:
         await log_manager.log("OCR Engine: Running Surya OCR...", "backend")
-        # 2060S için batch size'ı zorlama, tek tek işle veya küçük gruplar
-        predictions = run_ocr(
-            [pil_img], [[]], det_model, det_processor, rec_model, rec_processor
-        )
-        result = predictions[0]
 
-        # Text ve Layout verisini döndür
-        full_text = "\n".join([l.text_content for l in result.text_lines])
-        layout_json = result.json()  # Koordinatları içerir
-        await log_manager.log(
-            "OCR Engine: Surya OCR completed successfully.", "backend"
-        )
+        try:
+            # Run recognition with detection
+            predictions = rec_predictor([pil_img], det_predictor=det_predictor)
+            result = predictions[0]
+
+            # Extract Text
+            if hasattr(result, "text_lines"):
+                full_text = "\n".join([line.text for line in result.text_lines])
+
+            # Extract Layout JSON
+            if hasattr(result, "model_dump"):
+                layout_json = result.model_dump()
+            elif hasattr(result, "dict"):
+                layout_json = result.dict()
+            elif hasattr(result, "json"):
+                import json
+
+                layout_json = (
+                    json.loads(result.json())
+                    if isinstance(result.json(), str)
+                    else result.json()
+                )
+            else:
+                layout_json = result.__dict__
+
+            await log_manager.log(
+                f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(result.text_lines) if hasattr(result, 'text_lines') else 0} lines.",
+                "backend",
+            )
+        except Exception as e:
+            await log_manager.log(f"OCR Inference Error: {e}", "backend")
+            full_text = f"OCR Error: {e}"
     else:
-        error_msg = "OCR Modelleri Yüklenemedi"
+        error_msg = "OCR Modelleri Yüklü Değil (surya-ocr kütüphanesini güncelleyin)."
         await log_manager.log(f"OCR Engine Error: {error_msg}", "backend")
         full_text = error_msg
-        layout_json = {"text_lines": [], "image_bbox": [0, 0, 0, 0]}  # Dummy data
+        layout_json = {"text_lines": [], "image_bbox": [0, 0, 0, 0]}
+
+    duration = time.time() - start_time
+    await log_manager.log(
+        f"OCR Engine: Total processing time: {duration:.2f} seconds.", "backend"
+    )
 
     return clean_path, full_text, layout_json

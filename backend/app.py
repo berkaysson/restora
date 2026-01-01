@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-import shutil, os
+import shutil, os, time
 from database import init_db, get_db_connection
 from ocr_engine import process_page
 
@@ -41,26 +41,57 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    await log_manager.log(f"Request: {request.method} {request.url.path}", "backend")
+    client_host = request.client.host if request.client else "unknown"
+    await log_manager.log(
+        f"Request: {request.method} {request.url.path} from {client_host}", "backend"
+    )
+    start_time = time.time()
     response = await call_next(request)
-    await log_manager.log(f"Response: {response.status_code}", "backend")
+    duration = time.time() - start_time
+    await log_manager.log(
+        f"Response: {response.status_code} (took {duration:.2f}s)", "backend"
+    )
     return response
 
 
 @app.on_event("startup")
-def startup():
+async def startup():
+    await log_manager.log("System: Application startup initiated.", "system")
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
-    init_db()
+        await log_manager.log("System: Created 'uploads' directory.", "system")
+
+    try:
+        init_db()
+        await log_manager.log("System: Database initialized successfully.", "system")
+    except Exception as e:
+        await log_manager.log(
+            f"System Error: Database initialization failed: {e}", "system"
+        )
 
 
 @app.post("/upload")
 async def upload_pdf_page(file: UploadFile = File(...)):
-    await log_manager.log(f"Starting upload for file: {file.filename}", "backend")
-    # Demo için tek sayfa upload kabul ediyoruz
+    await log_manager.log(
+        f"Starting upload for file: {file.filename} (Type: {file.content_type})",
+        "backend",
+    )
+
+    # Check file size (approximate)
+    file_size = 0
     file_path = f"uploads/{file.filename}"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        file_size = os.path.getsize(file_path)
+        await log_manager.log(
+            f"File saved: {file_path} ({file_size / 1024:.2f} KB)", "backend"
+        )
+    except Exception as e:
+        await log_manager.log(f"Upload Error: Failed to save file: {e}", "backend")
+        return {"status": "error", "message": f"Upload failed: {e}"}
 
     # İşleme Başla
     try:
@@ -70,7 +101,6 @@ async def upload_pdf_page(file: UploadFile = File(...)):
 
         await log_manager.log("OCR completed. Analysing text...", "backend")
         # OCR'dan çıkan metni kelimelere böl
-        # (Daha iyi sonuç için regex kullanılabilir ama şimdilik split yeterli)
         words = text.split()
 
         # Bilinmeyen (hatalı olma ihtimali olan) kelimeleri bul
@@ -80,7 +110,8 @@ async def upload_pdf_page(file: UploadFile = File(...)):
         typos_list = list(misspelled)
 
         await log_manager.log(
-            f"Analysis complete. Found {len(typos_list)} potential typos.", "backend"
+            f"Analysis complete. Found {len(typos_list)} potential typos in {len(words)} words.",
+            "backend",
         )
 
         return {
@@ -88,7 +119,7 @@ async def upload_pdf_page(file: UploadFile = File(...)):
             "clean_image": clean_path,
             "text": text,
             "layout": layout,
-            "typos": typos_list,  # ### YENİ: Hataları Frontend'e gönderiyoruz ###
+            "typos": typos_list,
         }
     except Exception as e:
         await log_manager.log(f"Error during processing: {str(e)}", "backend")
@@ -103,9 +134,6 @@ async def list_uploads():
 
     files = []
     for filename in os.listdir(uploads_dir):
-        # Sadece dosyaları listele (ignore _clean.jpg versions if you want, but for now list all)
-        # Maybe filter to show only original files?
-        # For simplicity, let's list all for now, or maybe exclude _clean ones to avoid clutter
         if os.path.isfile(os.path.join(uploads_dir, filename)):
             files.append(filename)
 
@@ -149,7 +177,8 @@ async def process_existing_file(filename: str):
         typos_list = list(misspelled)
 
         await log_manager.log(
-            f"Analysis complete. Found {len(typos_list)} potential typos.", "backend"
+            f"Analysis complete. Found {len(typos_list)} potential typos in {len(words)} words.",
+            "backend",
         )
 
         return {
