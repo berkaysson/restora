@@ -27,6 +27,8 @@ function AppContent() {
   const [loading, setLoading] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
   const [isFileListOpen, setIsFileListOpen] = useState(false);
+  const [logHeight, setLogHeight] = useState(192); // Default h-48 = 192px
+  const [isResizing, setIsResizing] = useState(false);
   const { addLog } = useLogs();
 
   const processResponse = (res: AxiosResponse) => {
@@ -93,8 +95,34 @@ function AppContent() {
     }
   };
 
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = (e: React.MouseEvent) => {
+    if (isResizing) {
+      const newHeight = window.innerHeight - e.clientY;
+      // Limit height between 100px and 600px
+      if (newHeight > 100 && newHeight < 600) {
+        setLogHeight(newHeight);
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen font-sans text-gray-100 bg-gray-950 selection:bg-indigo-500/30">
+    <div
+      className={`flex flex-col h-screen font-sans text-gray-100 bg-gray-950 selection:bg-indigo-500/30 ${
+        isResizing ? "cursor-ns-resize" : ""
+      }`}
+      onMouseMove={resize}
+      onMouseUp={stopResizing}
+      onMouseLeave={stopResizing}
+    >
       <FileList
         isOpen={isFileListOpen}
         onClose={() => setIsFileListOpen(false)}
@@ -216,8 +244,18 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Logs Panel - Fixed Height */}
-      <div className="h-48 shrink-0">
+      {/* Logs Panel - Resizable */}
+      <div
+        className="relative border-t border-gray-800 shrink-0"
+        style={{ height: `${logHeight}px` }}
+      >
+        {/* Resize Handle */}
+        <div
+          className="absolute top-0 left-0 z-50 w-full h-1 transition-colors cursor-ns-resize hover:bg-indigo-500/50 group"
+          onMouseDown={startResizing}
+        >
+          <div className="absolute w-8 h-1 -translate-x-1/2 -translate-y-1/2 bg-gray-700 rounded-full top-1/2 left-1/2 group-hover:bg-indigo-400" />
+        </div>
         <Logs />
       </div>
     </div>

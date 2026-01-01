@@ -12,7 +12,7 @@ export const Logs = () => {
   }, [logs]);
 
   return (
-    <div className="flex flex-col h-full border-t border-gray-800 bg-gray-950/90 font-mono text-xs shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+    <div className="flex flex-col h-full bg-gray-950/90 font-mono text-xs shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900">
         <div className="flex items-center gap-2 text-gray-400">
