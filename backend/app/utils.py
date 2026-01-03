@@ -1,3 +1,5 @@
+import json
+import os
 from spellchecker import SpellChecker
 from logger import log_manager
 from ocr_engine import process_page
@@ -29,7 +31,7 @@ async def process_ocr_and_spellcheck(file_path: str, job_id: str):
             "backend",
         )
 
-        return {
+        result_data = {
             "status": "success",
             "job_id": job_id,
             "clean_image": clean_path,
@@ -37,6 +39,18 @@ async def process_ocr_and_spellcheck(file_path: str, job_id: str):
             "layout": layout,
             "typos": typos_list,
         }
+
+        # Sonuçları JSON olarak kaydet
+        json_path = os.path.join(os.path.dirname(file_path), "results.json")
+        try:
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(result_data, f, ensure_ascii=False, indent=4)
+            await log_manager.log(f"Results saved to JSON: {json_path}", "backend")
+        except Exception as e:
+            await log_manager.log(f"Error saving JSON: {e}", "backend")
+
+        return result_data
+
     except Exception as e:
         await log_manager.log(f"Error during processing: {str(e)}", "backend")
         return {"status": "error", "message": str(e)}
