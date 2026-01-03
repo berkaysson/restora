@@ -1,8 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useLogs } from "../context/LogContext";
-import { Terminal, Trash2 } from "lucide-react";
+import { Terminal, Trash2, X } from "lucide-react";
 
-export const Logs = () => {
+interface LogsProps {
+  onClose?: () => void;
+}
+
+export const Logs = ({ onClose }: LogsProps) => {
   const { logs, clearLogs } = useLogs();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -21,13 +25,25 @@ export const Logs = () => {
             System Logs
           </span>
         </div>
-        <button
-          onClick={clearLogs}
-          className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-red-400"
-          title="Clear Logs"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={clearLogs}
+            className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-red-400"
+            title="Clear Logs"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-gray-200"
+              title="Close Logs"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Log List */}

@@ -1,61 +1,31 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState } from "react";
 import { Logs } from "../Logs";
+import { Terminal } from "lucide-react";
 
 export const LogPanel: React.FC = () => {
-  const [height, setHeight] = useState(192); // Default h-48 = 192px
-  const [isResizing, setIsResizing] = useState(false);
-
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    document.body.style.cursor = "ns-resize";
-  }, []);
-
-  const stopResizing = useCallback(() => {
-    setIsResizing(false);
-    document.body.style.cursor = "default";
-  }, []);
-
-  const resize = useCallback(
-    (e: MouseEvent) => {
-      if (isResizing) {
-        const newHeight = window.innerHeight - e.clientY;
-        // Limit height between 100px and 600px
-        if (newHeight > 100 && newHeight < 600) {
-          setHeight(newHeight);
-        }
-      }
-    },
-    [isResizing]
-  );
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener("mousemove", resize);
-      window.addEventListener("mouseup", stopResizing);
-    } else {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    }
-    return () => {
-      window.removeEventListener("mousemove", resize);
-      window.removeEventListener("mouseup", stopResizing);
-    };
-  }, [isResizing, resize, stopResizing]);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div
-      className="relative border-t border-gray-800 shrink-0"
-      style={{ height: `${height}px` }}
-    >
-      {/* Resize Handle */}
-      <div
-        className="absolute top-0 left-0 z-50 w-full h-1 transition-colors cursor-ns-resize hover:bg-indigo-500/50 group"
-        onMouseDown={startResizing}
+    <>
+      {/* Trigger Button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className={`fixed bottom-4 right-4 z-40 p-3 text-indigo-400 bg-gray-900 border border-gray-700 rounded-full shadow-lg transition-all duration-300 hover:bg-gray-800 hover:text-indigo-300 ${
+          isOpen ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
+        }`}
+        title="Open System Logs"
       >
-        <div className="absolute w-8 h-1 -translate-x-1/2 -translate-y-1/2 bg-gray-700 rounded-full top-1/2 left-1/2 group-hover:bg-indigo-400" />
+        <Terminal className="w-5 h-5" />
+      </button>
+
+      {/* Drawer Panel */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-50 h-96 transition-transform duration-300 ease-in-out bg-gray-950 border-t border-gray-800 shadow-2xl ${
+          isOpen ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <Logs onClose={() => setIsOpen(false)} />
       </div>
-      <Logs />
-    </div>
+    </>
   );
 };
