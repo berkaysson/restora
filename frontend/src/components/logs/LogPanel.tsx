@@ -10,7 +10,7 @@ export const LogPanel: React.FC = () => {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-4 right-4 z-40 p-3 text-indigo-400 bg-gray-900 border border-gray-700 rounded-full shadow-lg transition-all duration-300 hover:bg-gray-800 hover:text-indigo-300 ${
+        className={`btn btn-circle btn-primary fixed bottom-4 right-4 z-40 shadow-xl transition-all duration-300 ${
           isOpen ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
         }`}
         title="Open System Logs"
@@ -20,7 +20,7 @@ export const LogPanel: React.FC = () => {
 
       {/* Drawer Panel */}
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 h-96 transition-transform duration-300 ease-in-out bg-gray-950 border-t border-gray-800 shadow-2xl ${
+        className={`fixed inset-x-0 bottom-0 z-50 h-96 transition-transform duration-300 ease-in-out bg-base-300 border-t border-base-content/10 shadow-2xl ${
           isOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >

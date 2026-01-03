@@ -121,7 +121,7 @@ function AppContent() {
   };
 
   return (
-    <div className="flex flex-col h-screen font-sans text-gray-100 bg-gray-950 selection:bg-indigo-500/30">
+    <div className="flex flex-col h-screen font-sans text-base-content bg-base-100 selection:bg-primary/30">
       <FileList
         isOpen={isFileListOpen}
         onClose={() => setIsFileListOpen(false)}

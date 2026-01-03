@@ -100,35 +100,34 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   };
 
   return (
-    <div className="relative flex w-1/2 overflow-hidden border-r border-gray-800 bg-gray-900/50 group">
+    <div className="relative flex w-1/2 overflow-hidden border-r border-base-content/10 bg-base-200/50 group">
       {data && (
         <>
           {/* Zoom Controls */}
-          <div className="absolute z-20 flex items-center gap-2 p-2 transition-all -translate-x-1/2 border rounded-full shadow-2xl bottom-8 left-1/2 bg-gray-800/90 backdrop-blur-md border-gray-700/50 opacity-40 hover:opacity-100">
+          <div className="absolute z-20 join shadow-xl bottom-8 left-1/2 -translate-x-1/2 bg-base-300/90 backdrop-blur-md opacity-40 hover:opacity-100 transition-opacity">
             <button
               onClick={handleZoomOut}
-              className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-300 hover:text-white"
+              className="join-item btn btn-sm btn-ghost"
               title="Uzaklaştır (Ctrl + Scroll)"
             >
-              <ZoomOut size={18} />
+              <ZoomOut size={16} />
             </button>
-            <span className="font-mono text-xs font-bold text-center text-indigo-400 min-w-14">
+            <span className="join-item flex items-center px-2 font-mono text-xs font-bold text-primary min-w-[3.5rem] justify-center bg-base-300/50">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
-              className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-300 hover:text-white"
+              className="join-item btn btn-sm btn-ghost"
               title="Yakınlaştır (Ctrl + Scroll)"
             >
-              <ZoomIn size={18} />
+              <ZoomIn size={16} />
             </button>
-            <div className="w-px h-4 mx-1 bg-gray-700" />
             <button
               onClick={handleResetZoom}
-              className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-gray-300 hover:text-white"
+              className="join-item btn btn-sm btn-ghost text-warning"
               title="Sıfırla"
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={16} />
             </button>
           </div>
 
@@ -137,7 +136,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
             <div className="flex justify-center">
               <button
                 onClick={() => scrollBy(0, -100)}
-                className="p-2 text-white border border-gray-700 rounded-full shadow-lg bg-gray-800/80 hover:bg-indigo-600 backdrop-blur-sm"
+                className="btn btn-circle btn-sm btn-neutral shadow-lg"
               >
                 <ChevronUp size={20} />
               </button>
@@ -145,13 +144,13 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
             <div className="flex justify-center gap-1">
               <button
                 onClick={() => scrollBy(-100, 0)}
-                className="p-2 text-white border border-gray-700 rounded-full shadow-lg bg-gray-800/80 hover:bg-indigo-600 backdrop-blur-sm"
+                className="btn btn-circle btn-sm btn-neutral shadow-lg"
               >
                 <ChevronLeft size={20} />
               </button>
               <button
                 onClick={() => scrollBy(100, 0)}
-                className="p-2 text-white border border-gray-700 rounded-full shadow-lg bg-gray-800/80 hover:bg-indigo-600 backdrop-blur-sm"
+                className="btn btn-circle btn-sm btn-neutral shadow-lg"
               >
                 <ChevronRight size={20} />
               </button>
@@ -159,7 +158,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
             <div className="flex justify-center">
               <button
                 onClick={() => scrollBy(0, 100)}
-                className="p-2 text-white border border-gray-700 rounded-full shadow-lg bg-gray-800/80 hover:bg-indigo-600 backdrop-blur-sm"
+                className="btn btn-circle btn-sm btn-neutral shadow-lg"
               >
                 <ChevronDown size={20} />
               </button>

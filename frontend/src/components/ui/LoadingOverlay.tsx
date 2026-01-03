@@ -1,5 +1,4 @@
 import React from "react";
-import { Loader2 } from "lucide-react";
 
 interface LoadingOverlayProps {
   loading: boolean;
@@ -9,17 +8,15 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ loading }) => {
   if (!loading) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gray-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-gray-900/90 border border-gray-800 shadow-2xl">
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full blur-lg bg-indigo-500/20 animate-pulse"></div>
-          <Loader2 className="relative w-12 h-12 text-indigo-400 animate-spin" />
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <h3 className="text-xl font-bold tracking-tight text-white">
-            AI İşleniyor
-          </h3>
-          <p className="text-sm text-gray-400">
+    <div className="absolute inset-0 z-50 flex items-center justify-center duration-200 bg-base-300/80 backdrop-blur-sm animate-in fade-in">
+      <div className="border shadow-xl card w-96 bg-base-100 border-base-content/10">
+        <div className="items-center text-center card-body">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full blur-lg bg-primary/20 animate-pulse"></div>
+            <span className="relative loading loading-spinner loading-lg text-primary"></span>
+          </div>
+          <h2 className="mt-4 card-title text-base-content">AI İşleniyor</h2>
+          <p className="text-base-content/60">
             Belge analiz ediliyor, lütfen bekleyin...
           </p>
         </div>

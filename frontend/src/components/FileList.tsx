@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { X, Trash2, FileText, Loader2, Calendar } from "lucide-react";
+import { X, Trash2, FileText, Calendar } from "lucide-react";
 import type { UploadJob } from "../types";
 
 interface FileListProps {
@@ -53,27 +53,24 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md overflow-hidden duration-200 bg-gray-900 border border-gray-800 shadow-2xl rounded-xl animate-in fade-in zoom-in">
-        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/50">
-          <h2 className="text-lg font-semibold text-white">
+    <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box bg-base-200 border border-base-content/10">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold text-lg text-base-content">
             Yüklenen İşler (Jobs)
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 transition-colors rounded-lg hover:bg-gray-800"
-          >
-            <X className="w-5 h-5 text-gray-400" />
+          </h3>
+          <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
           {loading ? (
-            <div className="flex justify-center p-4">
-              <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+            <div className="flex justify-center p-8">
+              <span className="loading loading-spinner loading-md text-primary"></span>
             </div>
           ) : jobs.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
+            <div className="py-8 text-center text-base-content/50">
               Dosya/İş bulunamadı
             </div>
           ) : (
@@ -81,19 +78,19 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
               {jobs.map((job) => (
                 <li
                   key={job.id}
-                  className="flex items-center justify-between p-3 transition-colors border border-gray-800 rounded-lg bg-gray-950/50 hover:border-indigo-500/30 group"
+                  className="flex items-center justify-between p-3 rounded-lg bg-base-100 border border-base-content/5 hover:border-primary/30 transition-colors group"
                 >
                   <div className="flex flex-col gap-1 overflow-hidden">
                     <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-indigo-400 transition-colors shrink-0 group-hover:text-indigo-300" />
+                      <FileText className="w-4 h-4 text-primary shrink-0" />
                       <span
-                        className="text-sm font-medium text-gray-300 truncate"
+                        className="text-sm font-medium text-base-content truncate"
                         title={job.original_file}
                       >
                         {getFileName(job.original_file)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-base-content/50">
                       <Calendar className="w-3 h-3" />
                       <span>{job.upload_date}</span>
                     </div>
@@ -102,17 +99,17 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => onSelect(job.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-indigo-300 bg-indigo-900/30 hover:bg-indigo-900/50 rounded-md transition-colors"
+                      className="btn btn-xs btn-primary btn-outline"
                     >
                       Aç
                     </button>
                     <button
                       onClick={() => handleDelete(job.id)}
                       disabled={deleting === job.id}
-                      className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
+                      className="btn btn-xs btn-ghost btn-square text-error"
                     >
                       {deleting === job.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="loading loading-spinner loading-xs"></span>
                       ) : (
                         <Trash2 className="w-4 h-4" />
                       )}
@@ -123,7 +120,13 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
             </ul>
           )}
         </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={onClose}>close</button>
+        </form>
       </div>
-    </div>
+      <form method="dialog" className="modal-backdrop">
+        <button onClick={onClose}>close</button>
+      </form>
+    </dialog>
   );
 }

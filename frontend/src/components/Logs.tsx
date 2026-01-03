@@ -16,19 +16,19 @@ export const Logs = ({ onClose }: LogsProps) => {
   }, [logs]);
 
   return (
-    <div className="flex flex-col h-full bg-gray-950/90 font-mono text-xs shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+    <div className="flex flex-col h-full bg-base-100 font-mono text-xs">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
-        <div className="flex items-center gap-2 text-gray-400">
+      <div className="navbar min-h-12 bg-base-300 px-4 border-b border-base-content/10">
+        <div className="flex-1 gap-2 text-base-content">
           <Terminal className="w-4 h-4" />
           <span className="font-bold tracking-wider uppercase">
             System Logs
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex-none gap-2">
           <button
             onClick={clearLogs}
-            className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-red-400"
+            className="btn btn-ghost btn-sm btn-square text-error"
             title="Clear Logs"
           >
             <Trash2 className="w-4 h-4" />
@@ -37,7 +37,7 @@ export const Logs = ({ onClose }: LogsProps) => {
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 text-gray-500 transition-colors rounded hover:bg-gray-800 hover:text-gray-200"
+              className="btn btn-ghost btn-sm btn-square"
               title="Close Logs"
             >
               <X className="w-4 h-4" />
@@ -47,41 +47,44 @@ export const Logs = ({ onClose }: LogsProps) => {
       </div>
 
       {/* Log List */}
-      <div className="flex-1 p-4 space-y-1 overflow-auto custom-scrollbar">
-        {logs.length === 0 ? (
-          <div className="italic text-gray-600 select-none">
-            No logs yet...等待 operations...
-          </div>
-        ) : (
-          logs.map((log, index) => {
-            // Determine Color
-            let colorClass = "text-gray-400"; // Default/System
-            if (log.source === "frontend") colorClass = "text-blue-400";
-            if (log.source === "backend") colorClass = "text-green-400";
+      <div className="flex-1 p-4 overflow-auto custom-scrollbar bg-base-200">
+        <ul className="space-y-1">
+          {logs.length === 0 ? (
+            <li className="italic text-base-content/50 select-none">
+              No logs yet... waiting operations...
+            </li>
+          ) : (
+            logs.map((log, index) => {
+              let badgeClass = "badge-neutral";
+              if (log.source === "frontend") badgeClass = "badge-info";
+              if (log.source === "backend") badgeClass = "badge-success";
 
-            return (
-              <div
-                key={index}
-                className="flex gap-3 hover:bg-gray-900/50 p-0.5 rounded"
-              >
-                <span className="text-gray-600 shrink-0">
-                  {new Date(log.timestamp).toLocaleTimeString()}
-                </span>
-                <span className={`break-all ${colorClass}`}>
-                  <span className="opacity-50 mr-2 uppercase text-[10px] border border-current px-1 rounded">
-                    {log.source === "system"
-                      ? "SYS"
-                      : log.source === "backend"
-                      ? "API"
-                      : "UI"}
+              return (
+                <li
+                  key={index}
+                  className="flex gap-3 hover:bg-base-300/50 p-1 rounded transition-colors"
+                >
+                  <span className="text-base-content/50 shrink-0 select-none">
+                    {new Date(log.timestamp).toLocaleTimeString()}
                   </span>
-                  {log.message}
-                </span>
-              </div>
-            );
-          })
-        )}
-        <div ref={bottomRef} />
+                  <span className="break-all flex-1 text-base-content/80">
+                    <span
+                      className={`badge badge-xs mr-2 uppercase ${badgeClass} font-bold text-white`}
+                    >
+                      {log.source === "system"
+                        ? "SYS"
+                        : log.source === "backend"
+                        ? "API"
+                        : "UI"}
+                    </span>
+                    {log.message}
+                  </span>
+                </li>
+              );
+            })
+          )}
+          <div ref={bottomRef} />
+        </ul>
       </div>
     </div>
   );
