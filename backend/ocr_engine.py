@@ -117,27 +117,34 @@ async def process_page(image_path: str):
             result = predictions[0]
 
             # Extract Text
+            # Extract Text & Construct Custom Layout
+            text_lines = []
             if hasattr(result, "text_lines"):
                 full_text = "\n".join([line.text for line in result.text_lines])
 
-            # Extract Layout JSON
-            if hasattr(result, "model_dump"):
-                layout_json = result.model_dump()
-            elif hasattr(result, "dict"):
-                layout_json = result.dict()
-            elif hasattr(result, "json"):
-                import json
+                for line in result.text_lines:
+                    # Convert Surya line object to our specific schema
+                    # Note: We need to handle potential missing fields safely
+                    chars_list = []
+                    # Assuming line might have 'chars' or similar if provided by detailed OCR,
+                    # but standard Surya text_prediction might just have text.
+                    # If not available, we leave it empty.
 
-                layout_json = (
-                    json.loads(result.json())
-                    if isinstance(result.json(), str)
-                    else result.json()
-                )
-            else:
-                layout_json = result.__dict__
+                    line_data = {
+                        "text": getattr(line, "text", ""),
+                        "confidence": getattr(line, "confidence", 0.0),
+                        "bbox": getattr(line, "bbox", [0, 0, 0, 0]),
+                        "polygon": getattr(line, "polygon", []),
+                        "chars": [],  # Surya typically returns lines. If chars are needed we'd need a different call or model.
+                        "original_text_good": True,  # Default value
+                        "words": [],  # Placeholder
+                    }
+                    text_lines.append(line_data)
+
+            layout_json = {"text_lines": text_lines}
 
             await log_manager.log(
-                f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(result.text_lines) if hasattr(result, 'text_lines') else 0} lines.",
+                f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(text_lines)} lines.",
                 "backend",
             )
         except Exception as e:
