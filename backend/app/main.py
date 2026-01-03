@@ -16,11 +16,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Resimleri frontend'e sunmak için statik yol
-# Assuming 'uploads' is in the root (where uvicorn runs)
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Ensure 'uploads' directory exists in the project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.middleware("http")
@@ -42,9 +46,9 @@ async def log_requests(request: Request, call_next):
 async def startup():
     await log_manager.log("System: Application startup initiated.", "system")
     # Also ensure uploads exists here just in case logging needs it or logic
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
-        await log_manager.log("System: Created 'uploads' directory.", "system")
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
+        await log_manager.log(f"System: Created '{UPLOAD_DIR}' directory.", "system")
 
     try:
         init_db()
