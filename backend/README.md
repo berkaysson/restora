@@ -87,9 +87,14 @@ Uploads a PDF page (as an image) or an image file for processing.
 
 ## Project Structure
 
-- `app.py`: Main application entry point. Configures CORS, static files, and routes.
+- `app.py`: Entry point wrapper to run the application.
+- `app/`: Contains the core application logic.
+  - `main.py`: FastAPI app initialization, middleware, and startup events.
+  - `routers/`: Directory for API route modules (e.g., `ocr.py`, `logs.py`).
+  - `utils.py`: Utility helper functions.
 - `database.py`: SQLite database initialization and connection handling.
 - `ocr_engine.py`: Contains the `process_page` function which handles image cleaning and OCR inference.
+- `logger.py`: System logging manager.
 - `uploads/`: Directory where uploaded and processed files are stored.
 - `restora.db`: SQLite database file (generated on startup).
 
