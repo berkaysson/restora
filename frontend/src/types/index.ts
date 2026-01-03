@@ -1,25 +1,31 @@
-export interface BBox {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
+export interface Char {
+  text: string;
+  confidence: number;
+  bbox: number[];
+  bbox_valid: boolean;
+  polygon: number[][];
 }
 
 export interface TextLine {
-  text_content: string;
-  bbox: [number, number, number, number]; // Surya formatı
+  text: string;
+  confidence: number;
+  bbox: number[];
+  polygon: number[][];
+  chars: Char[];
+  original_text_good: boolean;
+  words: unknown[];
 }
 
-export interface OCRResult {
+export interface Layout {
   text_lines: TextLine[];
-  image_bbox: [number, number, number, number];
 }
 
 export interface PageData {
+  status: string;
   job_id: string;
   clean_image: string;
   text: string;
-  layout: OCRResult; // JSON string ise parse edilmeli
+  layout: Layout;
   typos?: string[];
 }
 

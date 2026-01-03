@@ -1,17 +1,16 @@
 import React, { useState } from "react";
 import axios from "axios";
 import type { AxiosResponse } from "axios";
-import type { PageData, TextLine } from "./types";
-import {
-  Scan,
-  Upload,
-  FileText,
-  Image as ImageIcon,
-  Loader2,
-  FolderOpen,
-  Trash2,
-} from "lucide-react";
+import type { PageData } from "./types";
 import { FileList } from "./components/FileList";
+import { LogProvider, useLogs } from "./context/LogContext";
+
+// Components
+import { Header } from "./components/header/Header";
+import { LoadingOverlay } from "./components/ui/LoadingOverlay";
+import { ImagePreview } from "./components/preview/ImagePreview";
+import { TextEditor } from "./components/editor/TextEditor";
+import { LogPanel } from "./components/logs/LogPanel";
 
 // Yardımcı Fonksiyonlar
 const fixTurkishHyphens = (text: string | null | undefined) => {
@@ -20,16 +19,11 @@ const fixTurkishHyphens = (text: string | null | undefined) => {
   return text.replace(/(\w+)-\s*\n\s*([a-zğüşıöç]+)/g, "$1$2");
 };
 
-import { LogProvider, useLogs } from "./context/LogContext";
-import { Logs } from "./components/Logs";
-
 function AppContent() {
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
   const [isFileListOpen, setIsFileListOpen] = useState(false);
-  const [logHeight, setLogHeight] = useState(192); // Default h-48 = 192px
-  const [isResizing, setIsResizing] = useState(false);
   const { addLog } = useLogs();
 
   const processResponse = (res: AxiosResponse) => {
@@ -40,7 +34,7 @@ function AppContent() {
     // Surya çıktısını parse et
     const parsedLayout = (typeof res.data.layout === "string"
       ? JSON.parse(res.data.layout)
-      : res.data.layout) || { text_lines: [], image_bbox: [0, 0, 0, 0] };
+      : res.data.layout) || { text_lines: [] };
 
     // Türkçe Temizlikleri Uygula (Opsiyonel: otomatik yapabilir veya buton koyabiliriz)
     // Burada sadece layout'u işliyoruz, text ayrıca geliyor.
@@ -64,6 +58,7 @@ function AppContent() {
     try {
       addLog(`Frontend: Sending POST /upload request...`, "frontend");
       const res = await axios.post("http://localhost:8000/upload", formData);
+      console.log("🚀 ~ handleUpload ~ res:", res);
 
       addLog(`Frontend: Received response. Parsing layout...`, "frontend");
       processResponse(res);
@@ -125,180 +120,39 @@ function AppContent() {
     }
   };
 
-  const startResizing = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
-
-  const stopResizing = () => {
-    setIsResizing(false);
-  };
-
-  const resize = (e: React.MouseEvent) => {
-    if (isResizing) {
-      const newHeight = window.innerHeight - e.clientY;
-      // Limit height between 100px and 600px
-      if (newHeight > 100 && newHeight < 600) {
-        setLogHeight(newHeight);
-      }
-    }
-  };
-
   return (
-    <div
-      className={`flex flex-col h-screen font-sans text-gray-100 bg-gray-950 selection:bg-indigo-500/30 ${
-        isResizing ? "cursor-ns-resize" : ""
-      }`}
-      onMouseMove={resize}
-      onMouseUp={stopResizing}
-      onMouseLeave={stopResizing}
-    >
+    <div className="flex flex-col h-screen font-sans text-gray-100 bg-gray-950 selection:bg-indigo-500/30">
       <FileList
         isOpen={isFileListOpen}
         onClose={() => setIsFileListOpen(false)}
         onSelect={handleOpenFile}
       />
-      {/* Toolbar */}
-      <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <Scan className="w-6 h-6 text-indigo-400" />
-          <h1 className="text-lg font-bold tracking-tight text-transparent bg-linear-to-r from-indigo-400 to-cyan-400 bg-clip-text">
-            Restora{" "}
-            <span className="font-mono text-xs text-gray-500 opacity-70">
-              v.0.1
-            </span>
-          </h1>
-        </div>
 
-        <div className="flex items-center gap-4">
-          {loading && (
-            <div className="flex items-center gap-2 text-sm text-indigo-400 animate-pulse">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>AI İşleniyor ...</span>
-            </div>
-          )}
+      <Header
+        loading={loading}
+        data={data}
+        onOpenFileList={() => setIsFileListOpen(true)}
+        onUpload={handleUpload}
+        onClear={handleClear}
+      />
 
-          <button
-            onClick={() => setIsFileListOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 transition-all bg-gray-800 rounded-lg hover:bg-gray-700 hover:text-white"
-          >
-            <FolderOpen className="w-4 h-4" />
-            <span>Dosyalar</span>
-          </button>
+      <div className="relative flex flex-1 overflow-hidden">
+        <LoadingOverlay loading={loading} />
 
-          <label className="flex items-center gap-2 px-4 py-2 text-sm text-white transition-all bg-indigo-600 rounded-lg shadow-lg cursor-pointer hover:bg-indigo-500 shadow-indigo-500/20 active:scale-95">
-            <Upload className="w-4 h-4" />
-            <span>PDF/Resim Yükle</span>
-            <input
-              type="file"
-              onChange={handleUpload}
-              className="hidden"
-              accept="image/*,.pdf"
-            />
-          </label>
+        <ImagePreview
+          data={data}
+          highlightIndex={highlightIndex}
+          setHighlightIndex={setHighlightIndex}
+        />
 
-          {data && (
-            <button
-              onClick={handleClear}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 transition-all bg-red-900/20 border border-red-900/50 rounded-lg hover:bg-red-900/30 hover:text-red-300 active:scale-95"
-              title="Mevcut çalışmayı temizle ve dosyayı sil"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Temizle</span>
-            </button>
-          )}
-        </div>
+        <TextEditor
+          data={data}
+          highlightIndex={highlightIndex}
+          setHighlightIndex={setHighlightIndex}
+        />
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* SOL PANEL: Resim & Bounding Box */}
-        <div className="relative flex justify-center w-1/2 p-8 overflow-auto border-r border-gray-800 bg-gray-900/50">
-          {data ? (
-            <div className="relative inline-block overflow-hidden rounded-lg shadow-2xl shadow-black/50 group">
-              <img
-                src={`http://localhost:8000/${data.clean_image}`}
-                alt="Scan"
-                className="block max-w-full"
-              />
-              {/* Surya Kutucuklarını Çiz */}
-              {data.layout?.text_lines?.map((line: TextLine, idx: number) => {
-                const [x0, y0, x1, y1] = line.bbox;
-                return (
-                  <div
-                    key={idx}
-                    className={`absolute border cursor-pointer transition-all duration-200 ${
-                      highlightIndex === idx
-                        ? "border-indigo-400 bg-indigo-500/30"
-                        : "border-transparent hover:border-indigo-500/50 hover:bg-indigo-500/10"
-                    }`}
-                    style={{
-                      left: x0,
-                      top: y0,
-                      width: x1 - x0,
-                      height: y1 - y0,
-                    }}
-                    onMouseEnter={() => setHighlightIndex(idx)}
-                    onMouseLeave={() => setHighlightIndex(null)}
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-4 text-gray-600">
-              <ImageIcon className="w-16 h-16 opacity-20" />
-              <p>Görüntülenecek belge yok</p>
-            </div>
-          )}
-        </div>
-
-        {/* SAĞ PANEL: Metin Editörü */}
-        <div className="flex flex-col w-1/2 p-0 bg-gray-950">
-          <div className="flex justify-between p-4 font-mono text-xs text-gray-500 border-b border-gray-800 bg-gray-900/30">
-            <span>DETECTED TEXT</span>
-            <span>UTF-8</span>
-          </div>
-          <div className="flex-1 p-8 overflow-auto font-mono text-sm leading-7 text-gray-300">
-            {data ? (
-              data.layout?.text_lines?.map((line: TextLine, idx: number) => (
-                <div
-                  key={idx}
-                  className={`rounded px-2 -mx-2 transition-colors duration-200 ${
-                    highlightIndex === idx
-                      ? "bg-indigo-900/30 text-indigo-200"
-                      : "hover:bg-gray-900"
-                  }`}
-                  onMouseEnter={() => setHighlightIndex(idx)}
-                  onMouseLeave={() => setHighlightIndex(null)}
-                  contentEditable
-                  suppressContentEditableWarning
-                >
-                  {line.text_content}
-                </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-600">
-                <FileText className="w-16 h-16 opacity-20" />
-                <p>Henüz metin çıkarılmadı</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Logs Panel - Resizable */}
-      <div
-        className="relative border-t border-gray-800 shrink-0"
-        style={{ height: `${logHeight}px` }}
-      >
-        {/* Resize Handle */}
-        <div
-          className="absolute top-0 left-0 z-50 w-full h-1 transition-colors cursor-ns-resize hover:bg-indigo-500/50 group"
-          onMouseDown={startResizing}
-        >
-          <div className="absolute w-8 h-1 -translate-x-1/2 -translate-y-1/2 bg-gray-700 rounded-full top-1/2 left-1/2 group-hover:bg-indigo-400" />
-        </div>
-        <Logs />
-      </div>
+      <LogPanel />
     </div>
   );
 }
