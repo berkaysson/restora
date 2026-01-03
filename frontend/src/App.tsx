@@ -94,30 +94,8 @@ function AppContent() {
   const handleClear = async () => {
     if (!data) return;
 
-    if (
-      !window.confirm(
-        "Mevcut çalışmayı temizlemek ve dosyayı sunucudan silmek istediğinize emin misiniz?"
-      )
-    ) {
-      return;
-    }
-
-    const jobId = data.job_id;
-    addLog(
-      `Frontend: Clearing workspace and removing job ${jobId}`,
-      "frontend"
-    );
-
-    try {
-      await axios.delete(`http://localhost:8000/delete-upload/${jobId}`);
-      addLog(`Frontend: Job ${jobId} deleted from server.`, "frontend");
-    } catch (err) {
-      console.error(err);
-      addLog(`Frontend: Error deleting job - ${err}`, "frontend");
-    } finally {
-      setData(null);
-      setHighlightIndex(null);
-    }
+    setData(null);
+    setHighlightIndex(null);
   };
 
   return (
