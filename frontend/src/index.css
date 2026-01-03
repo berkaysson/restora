@@ -1,8 +1,12 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: nord, sunset;
+}
+
+@custom-variant dark (&:where([data-theme="sunset"], [data-theme="sunset"] *));
 
 @layer base {
   body {
-    @apply text-gray-100 bg-gray-950;
+    @apply bg-base-100 text-base-content;
   }
 }
