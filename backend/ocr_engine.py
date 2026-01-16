@@ -86,10 +86,9 @@ async def process_page(image_path: str):
         raise ValueError(error_msg)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Gürültü silme ve netleştirme
-    clean_img = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-    )
+    # Skip aggressive cleaning (adaptive threshold) to avoid adding noise/dots
+    # Modern OCR models like Surya handle grayscale better than binary
+    clean_img = gray
 
     clean_path = image_path.replace(".jpg", "_clean.jpg").replace(
         ".png", "_clean.jpg"
