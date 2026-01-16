@@ -1,22 +1,46 @@
 import React, { useState } from "react";
 import { Logs } from "../Logs";
-import { Terminal } from "lucide-react";
+import { Terminal, Activity } from "lucide-react";
 
-export const LogPanel: React.FC = () => {
+interface LogPanelProps {
+  onOpenOverlay: () => void;
+  showOverlayButton?: boolean;
+}
+
+export const LogPanel: React.FC<LogPanelProps> = ({
+  onOpenOverlay,
+  showOverlayButton = false,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      {/* Trigger Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`btn btn-circle btn-primary fixed bottom-4 right-4 z-40 shadow-xl transition-all duration-300 ${
+      {/* Trigger Buttons Container */}
+      <div
+        className={`fixed bottom-4 right-4 z-40 flex gap-2 transition-all duration-300 ${
           isOpen ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
         }`}
-        title="Open System Logs"
       >
-        <Terminal className="w-5 h-5" />
-      </button>
+        {/* Overlay Trigger Button */}
+        {showOverlayButton && (
+          <button
+            onClick={onOpenOverlay}
+            className="btn btn-circle btn-secondary shadow-xl"
+            title="Yükleme Durumunu Görüntüle"
+          >
+            <Activity className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* System Logs Trigger Button */}
+        <button
+          onClick={() => setIsOpen(true)}
+          className="btn btn-circle btn-primary shadow-xl"
+          title="Sistem Günlüklerini Aç"
+        >
+          <Terminal className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Drawer Panel */}
       <div

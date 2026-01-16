@@ -22,6 +22,9 @@ const fixTurkishHyphens = (text: string | null | undefined) => {
 function AppContent() {
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("İşleniyor...");
+  const [progress, setProgress] = useState(0);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
   const [isFileListOpen, setIsFileListOpen] = useState(false);
   const { addLog } = useLogs();
@@ -48,6 +51,9 @@ function AppContent() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     setLoading(true);
+    setIsOverlayOpen(true);
+    setProgress(0);
+    setLoadingMessage("Dosya yükleniyor...");
 
     const file = e.target.files[0];
     addLog(`Frontend: Started processing file ${file.name}`, "frontend");
@@ -55,13 +61,43 @@ function AppContent() {
     const formData = new FormData();
     formData.append("file", file);
 
+    // Simulated progress timer for processing phase
+    let progressInterval: ReturnType<typeof setInterval>;
+
     try {
       addLog(`Frontend: Sending POST /upload request...`, "frontend");
-      const res = await axios.post("http://localhost:8000/upload", formData);
+      const res = await axios.post("http://localhost:8000/upload", formData, {
+        onUploadProgress: (progressEvent) => {
+          const total = progressEvent.total || 1;
+          // Upload is 30% of total visual progress
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 30) / total
+          );
+          setProgress(percentCompleted);
+        },
+      });
+
+      // Upload done, start processing simulation
+      setLoadingMessage("AI Analizi yapılıyor...");
+      addLog(`Frontend: Upload complete. Waiting for analysis...`, "frontend");
+
+      // Simulate progress from 30% to 90%
+      setProgress(30);
+      progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 1; // Increment slowly
+        });
+      }, 500); // Update every 500ms
+
       console.log("🚀 ~ handleUpload ~ res:", res);
 
       addLog(`Frontend: Received response. Parsing layout...`, "frontend");
       processResponse(res);
+      setProgress(100);
     } catch (err) {
       console.error(err);
       addLog(`Frontend: Error during upload - ${err}`, "frontend");
@@ -69,24 +105,40 @@ function AppContent() {
         `Hata oluştu! ${err instanceof Error ? err.message : "Backend hatası"}`
       );
     } finally {
+      if (progressInterval!) clearInterval(progressInterval);
+      // We don't close the overlay here anymore, let user inspect
       setLoading(false);
     }
   };
 
   const handleOpenFile = async (jobId: string) => {
     setLoading(true);
+    setIsOverlayOpen(true);
     setIsFileListOpen(false);
+    setProgress(0);
+    setLoadingMessage("Dosya açılıyor...");
     addLog(`Frontend: Opening existing job ${jobId}`, "frontend");
+
+    // Simulated progress for opening
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return 90;
+        return prev + 10;
+      });
+    }, 200);
+
     try {
       const res = await axios.post(
         `http://localhost:8000/process-existing/${jobId}`
       );
       processResponse(res);
+      setProgress(100);
     } catch (err) {
       console.error(err);
       addLog(`Frontend: Error opening job - ${err}`, "frontend");
       alert(`Hata: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
+      clearInterval(progressInterval);
       setLoading(false);
     }
   };
@@ -115,7 +167,13 @@ function AppContent() {
       />
 
       <div className="relative flex flex-1 overflow-hidden">
-        <LoadingOverlay loading={loading} />
+        <LoadingOverlay
+          isOpen={isOverlayOpen}
+          loading={loading}
+          message={loadingMessage}
+          progress={progress}
+          onClose={() => setIsOverlayOpen(false)}
+        />
 
         <ImagePreview
           data={data}
@@ -130,7 +188,10 @@ function AppContent() {
         />
       </div>
 
-      <LogPanel />
+      <LogPanel
+        onOpenOverlay={() => setIsOverlayOpen(true)}
+        showOverlayButton={!!data}
+      />
     </div>
   );
 }
