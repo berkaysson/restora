@@ -5,7 +5,8 @@
 - [ ] Process each pages and store in database
 - [x] While processing pdf feedback to user with progress and what currently app trying to do
 - [ ] Export as searchable pdf
-- [ ] Filter noise and keep only content
+- [x] Filter noise and keep only content
 - [ ] Manuel text correction before export
 - [ ] Add unit tests and agent instructions
-- [ ] Organize backend code
+- [x] Organize backend code with modulizing engine
+- [ ] Document the code better

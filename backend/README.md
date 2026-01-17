@@ -13,7 +13,7 @@ This is the backend for the **Restora** project, a FastAPI-based application tha
 ## Prerequisites
 
 - Python 3.9+ (Recommended)
-- CUDA-compatible GPU (Optional, but recommended for faster OCR, check `ocr_engine.py` logic)
+- CUDA-compatible GPU (Optional, but recommended for faster OCR, see [engine/README.md](engine/README.md))
 
 ## Installation
 
@@ -30,7 +30,6 @@ This is the backend for the **Restora** project, a FastAPI-based application tha
     ```
 
 3.  **Activate the virtual environment:**
-
     - Windows:
       ```bash
       venv\Scripts\activate
@@ -93,7 +92,8 @@ Uploads a PDF page (as an image) or an image file for processing.
   - `routers/`: Directory for API route modules (e.g., `ocr.py`, `logs.py`).
   - `utils.py`: Utility helper functions.
 - `database.py`: SQLite database initialization and connection handling.
-- `ocr_engine.py`: Contains the `process_page` function which handles image cleaning and OCR inference.
+- `engine/`: **Core OCR and Processing Engine**. Contains the logic for modifying files, running models, and extracting data. See [engine/README.md](engine/README.md) for detailed documentation.
+- `ocr_engine.py`: Wrapper entry point for the engine module.
 - `logger.py`: System logging manager.
 - `uploads/`: Directory where uploaded and processed files are stored.
 - `restora.db`: SQLite database file (generated on startup).
