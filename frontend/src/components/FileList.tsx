@@ -55,9 +55,9 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
 
   return (
     <dialog className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box bg-base-200 border border-base-content/10">
+      <div className="border modal-box bg-base-200 border-base-content/10">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-lg text-base-content">
+          <h3 className="text-lg font-bold text-base-content">
             Yüklenen İşler (Jobs)
           </h3>
           <button onClick={onClose} className="btn btn-sm btn-circle btn-ghost">
@@ -79,13 +79,13 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
               {jobs.map((job) => (
                 <li
                   key={job.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-base-100 border border-base-content/5 hover:border-primary/30 transition-colors group"
+                  className="flex items-center justify-between p-3 transition-colors border rounded-lg bg-base-100 border-base-content/5 hover:border-primary/30 group"
                 >
                   <div className="flex flex-col gap-1 overflow-hidden">
                     <div className="flex items-center gap-3">
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <span
-                        className="text-sm font-medium text-base-content truncate"
+                        className="text-sm font-medium truncate text-base-content"
                         title={job.original_file}
                       >
                         {getFileName(job.original_file)}

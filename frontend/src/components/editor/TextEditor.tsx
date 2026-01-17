@@ -1,23 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FileText } from "lucide-react";
 import { ZoomController } from "../common/ZoomController";
-import type { PageData, TextLine } from "../../types";
+import type { TextLine } from "../../types";
+import { useAnalysis } from "../../context/AnalysisContext";
+import { useEditor } from "../../context/EditorContext";
 
-interface TextEditorProps {
-  data: PageData | null;
-  highlightIndex: number | null;
-  setHighlightIndex: (index: number | null) => void;
-  hiddenLabels: string[];
-  onToggleLabel: (label: string) => void;
-}
+export const TextEditor: React.FC = () => {
+  const { data, highlightIndex, setHighlightIndex, hiddenLabels, toggleLabel } =
+    useAnalysis();
+  const { fontSize } = useEditor();
 
-export const TextEditor: React.FC<TextEditorProps> = ({
-  data,
-  highlightIndex,
-  setHighlightIndex,
-  hiddenLabels,
-  onToggleLabel,
-}) => {
   const [zoom, setZoom] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -200,7 +192,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               return (
                 <button
                   key={label}
-                  onClick={() => onToggleLabel(label)}
+                  onClick={() => toggleLabel(label)}
                   className={`btn btn-xs normal-case border-0 ${
                     isHidden
                       ? "btn-ghost text-base-content/40 decoration-line-through bg-base-300"
@@ -245,7 +237,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               }}
             >
               {text_lines.map((line: TextLine, idx: number) => {
-                const isHidden = line.layout_labels?.some((lbl) =>
+                const isHidden = line.layout_labels?.some((lbl: string) =>
                   hiddenLabels.includes(lbl),
                 );
 
@@ -303,7 +295,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               Warning: Image dimensions missing. Showing list view.
             </div>
             {text_lines.map((line: TextLine, idx: number) => {
-              const isHidden = line.layout_labels?.some((lbl) =>
+              const isHidden = line.layout_labels?.some((lbl: string) =>
                 hiddenLabels.includes(lbl),
               );
               if (isHidden) return null;
@@ -316,6 +308,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                       ? "bg-primary/20 text-primary"
                       : "hover:bg-base-200"
                   }`}
+                  style={{ fontSize: `${fontSize}px` }}
                   onMouseEnter={() => setHighlightIndex(idx)}
                   onMouseLeave={() => setHighlightIndex(null)}
                 >

@@ -12,6 +12,7 @@ import {
 
 interface ZoomControllerProps {
   zoom: number;
+  isNavigationPadVisible?: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetZoom: () => void;
@@ -21,6 +22,7 @@ interface ZoomControllerProps {
 
 export const ZoomController: React.FC<ZoomControllerProps> = ({
   zoom,
+  isNavigationPadVisible = false,
   onZoomIn,
   onZoomOut,
   onResetZoom,
@@ -31,7 +33,7 @@ export const ZoomController: React.FC<ZoomControllerProps> = ({
     <div className="flex items-center gap-2 p-1 border shadow-2xl bg-base-300/90 backdrop-blur-xl rounded-2xl border-white/10 ring-1 ring-black/20">
       {/* Zoom Controls */}
       <div
-        className={`flex items-center gap-1 px-2 ${onScroll ? "border-r border-white/5" : ""}`}
+        className={`flex items-center gap-1 px-2 ${onScroll && isNavigationPadVisible ? "border-r border-white/5" : ""}`}
       >
         <button
           onClick={onZoomOut}
@@ -71,7 +73,7 @@ export const ZoomController: React.FC<ZoomControllerProps> = ({
       </div>
 
       {/* Navigation Pad */}
-      {onScroll && (
+      {onScroll && isNavigationPadVisible && (
         <div className="flex items-center gap-1 px-1">
           <div className="grid grid-cols-3 gap-0.5">
             <div />

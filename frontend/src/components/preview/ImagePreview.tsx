@@ -1,21 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { ZoomController } from "../common/ZoomController";
-import type { PageData, TextLine } from "../../types";
+import type { TextLine } from "../../types";
+import { useAnalysis } from "../../context/AnalysisContext";
 
-interface ImagePreviewProps {
-  data: PageData | null;
-  highlightIndex: number | null;
-  setHighlightIndex: (index: number | null) => void;
-  hiddenLabels: string[];
-}
-
-export const ImagePreview: React.FC<ImagePreviewProps> = ({
-  data,
-  highlightIndex,
-  setHighlightIndex,
-  hiddenLabels,
-}) => {
+export const ImagePreview: React.FC = () => {
+  const { data, highlightIndex, setHighlightIndex, hiddenLabels } =
+    useAnalysis();
   const [zoom, setZoom] = useState(1);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -198,7 +189,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                 draggable={false}
               />
               {data.layout?.text_lines?.map((line: TextLine, idx: number) => {
-                const isHidden = line.layout_labels?.some((lbl) =>
+                const isHidden = line.layout_labels?.some((lbl: string) =>
                   hiddenLabels.includes(lbl),
                 );
                 if (isHidden) return null;
