@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onClear,
 }) => {
   const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "nord"
+    () => localStorage.getItem("theme") || "nord",
   );
 
   useEffect(() => {
