@@ -16,12 +16,14 @@ interface ImagePreviewProps {
   data: PageData | null;
   highlightIndex: number | null;
   setHighlightIndex: (index: number | null) => void;
+  hiddenLabels: string[];
 }
 
 export const ImagePreview: React.FC<ImagePreviewProps> = ({
   data,
   highlightIndex,
   setHighlightIndex,
+  hiddenLabels,
 }) => {
   const [zoom, setZoom] = useState(1);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
@@ -36,11 +38,11 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
 
   const handleZoomIn = useCallback(
     () => setZoom((prev) => Math.min(prev + 0.2, 5)),
-    []
+    [],
   );
   const handleZoomOut = useCallback(
     () => setZoom((prev) => Math.max(prev - 0.2, 0.2)),
-    []
+    [],
   );
   const handleResetZoom = useCallback(() => setZoom(1), []);
 
@@ -272,6 +274,11 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                 draggable={false}
               />
               {data.layout?.text_lines?.map((line: TextLine, idx: number) => {
+                const isHidden = line.layout_labels?.some((lbl) =>
+                  hiddenLabels.includes(lbl),
+                );
+                if (isHidden) return null;
+
                 const [x0, y0, x1, y1] = line.bbox;
                 return (
                   <div

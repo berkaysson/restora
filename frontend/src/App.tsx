@@ -29,6 +29,16 @@ function AppContent() {
   const [isFileListOpen, setIsFileListOpen] = useState(false);
   const { addLog } = useLogs();
 
+  // Layout Filtering State
+  const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
+
+  const toggleLabel = (label: string) => {
+    setHiddenLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  };
+
+  // Reset filters when new data loads
   const processResponse = (res: AxiosResponse) => {
     if (res.data.status === "error") {
       throw new Error(res.data.message || "Unknown backend error");
@@ -44,6 +54,7 @@ function AppContent() {
     // Text üzerinde de hyphenation düzeltmesi yapalım.
     const fixedText = fixTurkishHyphens(res.data.text);
 
+    setHiddenLabels([]); // Reset filters
     setData({ ...res.data, text: fixedText, layout: parsedLayout });
     addLog(`Frontend: Data successfully updated.`, "frontend");
   };
@@ -71,7 +82,7 @@ function AppContent() {
           const total = progressEvent.total || 1;
           // Upload is 30% of total visual progress
           const percentCompleted = Math.round(
-            (progressEvent.loaded * 30) / total
+            (progressEvent.loaded * 30) / total,
           );
           setProgress(percentCompleted);
         },
@@ -102,7 +113,7 @@ function AppContent() {
       console.error(err);
       addLog(`Frontend: Error during upload - ${err}`, "frontend");
       alert(
-        `Hata oluştu! ${err instanceof Error ? err.message : "Backend hatası"}`
+        `Hata oluştu! ${err instanceof Error ? err.message : "Backend hatası"}`,
       );
     } finally {
       if (progressInterval!) clearInterval(progressInterval);
@@ -129,7 +140,7 @@ function AppContent() {
 
     try {
       const res = await axios.post(
-        `http://localhost:8000/process-existing/${jobId}`
+        `http://localhost:8000/process-existing/${jobId}`,
       );
       processResponse(res);
       setProgress(100);
@@ -148,6 +159,7 @@ function AppContent() {
 
     setData(null);
     setHighlightIndex(null);
+    setHiddenLabels([]);
   };
 
   return (
@@ -179,12 +191,15 @@ function AppContent() {
           data={data}
           highlightIndex={highlightIndex}
           setHighlightIndex={setHighlightIndex}
+          hiddenLabels={hiddenLabels}
         />
 
         <TextEditor
           data={data}
           highlightIndex={highlightIndex}
           setHighlightIndex={setHighlightIndex}
+          hiddenLabels={hiddenLabels}
+          onToggleLabel={toggleLabel}
         />
       </div>
 

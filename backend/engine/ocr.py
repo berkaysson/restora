@@ -18,6 +18,25 @@ async def run_ocr(image_path: str):
             )
             result = predictions[0]
 
+            # Run Layout Analysis
+            layout_blocks = []
+            if models.layout_predictor:
+                try:
+                    layout_preds = models.layout_predictor([pil_img])
+                    l_result = layout_preds[0]
+                    # Surya Layout returns 'bboxes' attribute for blocks
+                    for block in getattr(l_result, "bboxes", []):
+                        layout_blocks.append(
+                            {
+                                "label": block.label,
+                                "confidence": getattr(block, "confidence", 1.0),
+                                "bbox": block.bbox,
+                                "polygon": block.polygon,
+                            }
+                        )
+                except Exception as e:
+                    await log_manager.log(f"Layout Inference Error: {e}", "backend")
+
             # Extract Text & Construct Custom Layout
             text_lines = []
             if hasattr(result, "text_lines"):
@@ -25,18 +44,35 @@ async def run_ocr(image_path: str):
 
                 for line in result.text_lines:
                     # Convert Surya line object to our specific schema
+                    line_bbox = getattr(line, "bbox", [0, 0, 0, 0])
+
+                    # Determine layout labels for this line
+                    assigned_labels = []
+                    cx = (line_bbox[0] + line_bbox[2]) / 2
+                    cy = (line_bbox[1] + line_bbox[3]) / 2
+
+                    for lb in layout_blocks:
+                        l_bbox = lb["bbox"]
+                        # Check if line center is inside layout block
+                        if (
+                            l_bbox[0] <= cx <= l_bbox[2]
+                            and l_bbox[1] <= cy <= l_bbox[3]
+                        ):
+                            assigned_labels.append(lb["label"])
+
                     line_data = {
                         "text": getattr(line, "text", ""),
                         "confidence": getattr(line, "confidence", 0.0),
-                        "bbox": getattr(line, "bbox", [0, 0, 0, 0]),
+                        "bbox": line_bbox,
                         "polygon": getattr(line, "polygon", []),
                         "chars": [],
                         "original_text_good": True,
                         "words": [],
+                        "layout_labels": assigned_labels,
                     }
                     text_lines.append(line_data)
 
-            layout_json = {"text_lines": text_lines}
+            layout_json = {"text_lines": text_lines, "layout_blocks": layout_blocks}
 
             await log_manager.log(
                 f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(text_lines)} lines.",

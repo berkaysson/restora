@@ -14,10 +14,19 @@ export interface TextLine {
   chars: Char[];
   original_text_good: boolean;
   words: unknown[];
+  layout_labels?: string[];
+}
+
+export interface LayoutBlock {
+  label: string;
+  confidence: number;
+  bbox: number[];
+  polygon: number[][];
 }
 
 export interface Layout {
   text_lines: TextLine[];
+  layout_blocks?: LayoutBlock[];
 }
 
 export interface PageData {
