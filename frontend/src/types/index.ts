@@ -27,6 +27,8 @@ export interface LayoutBlock {
 export interface Layout {
   text_lines: TextLine[];
   layout_blocks?: LayoutBlock[];
+  width?: number;
+  height?: number;
 }
 
 export interface PageData {

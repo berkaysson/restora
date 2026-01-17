@@ -72,7 +72,12 @@ async def run_ocr(image_path: str):
                     }
                     text_lines.append(line_data)
 
-            layout_json = {"text_lines": text_lines, "layout_blocks": layout_blocks}
+            layout_json = {
+                "text_lines": text_lines,
+                "layout_blocks": layout_blocks,
+                "width": pil_img.width,
+                "height": pil_img.height,
+            }
 
             await log_manager.log(
                 f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(text_lines)} lines.",

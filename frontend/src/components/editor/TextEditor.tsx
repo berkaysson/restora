@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FileText } from "lucide-react";
+import { ZoomController } from "../common/ZoomController";
 import type { PageData, TextLine } from "../../types";
 
 interface TextEditorProps {
@@ -17,6 +18,92 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   hiddenLabels,
   onToggleLabel,
 }) => {
+  const [zoom, setZoom] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({
+    x: 0,
+    y: 0,
+    scrollLeft: 0,
+    scrollTop: 0,
+  });
+
+  const handleZoomIn = useCallback(
+    () => setZoom((prev) => Math.min(3, prev + 0.2)),
+    [],
+  );
+  const handleZoomOut = useCallback(
+    () => setZoom((prev) => Math.max(0.2, prev - 0.2)),
+    [],
+  );
+  const handleResetZoom = useCallback(() => setZoom(1), []);
+
+  const scrollBy = useCallback((dx: number, dy: number) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({
+        left: dx,
+        top: dy,
+        behavior: "smooth",
+      });
+    }
+  }, []);
+
+  // Ctrl+Scroll Zoom
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) handleZoomIn();
+        else handleZoomOut();
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [data, handleZoomIn, handleZoomOut]);
+
+  // Drag to Pan
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!scrollContainerRef.current) return;
+      const dx = e.pageX - dragStart.x;
+      const dy = e.pageY - dragStart.y;
+      scrollContainerRef.current.scrollLeft = dragStart.scrollLeft - dx;
+      scrollContainerRef.current.scrollTop = dragStart.scrollTop - dy;
+    };
+
+    const handleWindowMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+    };
+  }, [isDragging, dragStart]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+
+    if (!scrollContainerRef.current) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.pageX,
+      y: e.pageY,
+      scrollLeft: scrollContainerRef.current.scrollLeft,
+      scrollTop: scrollContainerRef.current.scrollTop,
+    });
+  };
+
   // Extract all unique labels from the current document
   const availableLabels = React.useMemo(() => {
     if (!data?.layout?.text_lines) return [];
@@ -27,15 +114,85 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     return Array.from(labels).sort();
   }, [data]);
 
+  const { width, height, text_lines } = data?.layout || {};
+  const hasDimensions = !!(width && height);
+  const aspectRatio = hasDimensions
+    ? (width as number) / (height as number)
+    : undefined;
+
+  const handleFitToPage = React.useCallback(() => {
+    if (!scrollContainerRef.current || !hasDimensions || !aspectRatio) return;
+    const container = scrollContainerRef.current;
+
+    const availableWidth = container.clientWidth - 64;
+    const availableHeight = container.clientHeight - 64;
+
+    const baseWidth = 1000;
+    const baseHeight = baseWidth / aspectRatio;
+
+    const zoomX = availableWidth / baseWidth;
+    const zoomY = availableHeight / baseHeight;
+
+    setZoom(Math.min(zoomX, zoomY));
+  }, [hasDimensions, aspectRatio]);
+
+  // Auto-fit on load
+  useEffect(() => {
+    if (data?.layout) {
+      const timer = setTimeout(handleFitToPage, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [data, handleFitToPage]);
+
+  if (!data || !data.layout?.text_lines || !text_lines) {
+    return (
+      <div className="relative flex flex-col items-center justify-center w-full h-full gap-6 overflow-hidden border-l bg-base-200/50 text-base-content/40 border-base-200">
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, currentColor 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        <div className="p-8 rounded-full shadow-xl bg-base-100 ring-1 ring-base-content/5">
+          <FileText className="w-12 h-12 opacity-50" />
+        </div>
+        <div className="space-y-1 text-center">
+          <h3 className="text-lg font-semibold text-base-content/70">
+            Henüz metin yok
+          </h3>
+          <p className="text-sm max-w-50">
+            İşlem yapmak için bir belge yükleyin veya OCR işlemini başlatın.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col w-1/2 p-0 bg-base-100">
-      <div className="flex flex-col gap-2 p-4 border-b border-base-content/10 bg-base-200/50">
-        <div className="flex justify-between font-mono text-xs text-base-content/50">
-          <span>DETECTED TEXT</span>
-          <span>UTF-8</span>
+    <div className="flex flex-col w-full h-full bg-base-100">
+      <div className="sticky top-0 z-20 flex flex-col gap-3 p-3 border-b shadow-sm border-base-content/5 bg-base-100">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-xs text-base-content/50">
+              DETECTED TEXT ({text_lines.length} lines)
+            </span>
+            <span className="font-mono text-[10px] text-base-content/30">
+              {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
+            </span>
+          </div>
+
+          <ZoomController
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onResetZoom={handleResetZoom}
+            onFitContent={handleFitToPage}
+            onScroll={scrollBy}
+          />
         </div>
 
-        {/* Filter Switches */}
         {availableLabels.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-1">
             {availableLabels.map((label) => {
@@ -59,36 +216,113 @@ export const TextEditor: React.FC<TextEditorProps> = ({
         )}
       </div>
 
-      <div className="flex-1 p-8 overflow-auto font-mono text-sm leading-7 text-base-content cursor-default">
-        {data ? (
-          data.layout?.text_lines?.map((line: TextLine, idx: number) => {
-            // Check if line should be hidden
-            const isHidden = line.layout_labels?.some((lbl) =>
-              hiddenLabels.includes(lbl),
-            );
-            if (isHidden) return null;
+      <div
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-auto p-8 relative transition-colors select-none ${
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        } bg-base-200/50 text-base-content/20`}
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, currentColor 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        {hasDimensions ? (
+          <div
+            className="mx-auto transition-all origin-top"
+            style={{
+              width: `${1000 * zoom}px`,
+              aspectRatio: `${aspectRatio}`,
+            }}
+          >
+            <div
+              className="relative transition-all origin-top-left rounded-sm shadow-xl bg-base-100 ring-1 ring-base-content/5 text-base-content"
+              style={{
+                width: `1000px`,
+                height: `${1000 / (aspectRatio || 1)}px`,
+                transform: `scale(${zoom})`,
+              }}
+            >
+              {text_lines.map((line: TextLine, idx: number) => {
+                const isHidden = line.layout_labels?.some((lbl) =>
+                  hiddenLabels.includes(lbl),
+                );
 
-            return (
-              <div
-                key={idx}
-                contentEditable={false}
-                spellCheck={false}
-                className={`rounded px-2 -mx-2 transition-colors duration-200 cursor-default ${
-                  highlightIndex === idx
-                    ? "bg-primary/20 text-primary"
-                    : "hover:bg-base-200"
-                }`}
-                onMouseEnter={() => setHighlightIndex(idx)}
-                onMouseLeave={() => setHighlightIndex(null)}
-              >
-                {line.text}
-              </div>
-            );
-          })
+                if (isHidden) return null;
+
+                const [x1, y1, x2, y2] = line.bbox;
+                const w = x2 - x1;
+                const h = y2 - y1;
+
+                const left = (x1 / width!) * 100;
+                const top = (y1 / height!) * 100;
+                const wPct = (w / width!) * 100;
+                const hPct = (h / height!) * 100;
+
+                return (
+                  <div
+                    key={idx}
+                    className={`absolute flex items-center hover:z-50 group border border-transparent hover:border-primary/50 rounded transition-colors ${
+                      highlightIndex === idx
+                        ? "bg-primary/20 text-primary z-50 border-primary"
+                        : "hover:bg-primary/5 text-base-content"
+                    }`}
+                    style={{
+                      left: `${left}%`,
+                      top: `${top}%`,
+                      width: `${wPct}%`,
+                      height: `${hPct}%`,
+                      fontSize: `${(h / height!) * (1000 / (aspectRatio || 1))}px`,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={() => setHighlightIndex(idx)}
+                    onMouseLeave={() => setHighlightIndex(null)}
+                  >
+                    <span
+                      className="block w-full h-full px-px"
+                      style={{
+                        fontSize: "clamp(6px, 100%, 48px)",
+                      }}
+                    >
+                      {line.text}
+                    </span>
+                    <div className="absolute left-0 hidden px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 group-hover:block bg-neutral text-neutral-content whitespace-nowrap z-100">
+                      {line.text} (
+                      {line.layout_labels?.join(", ") || "No Label"})
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-base-content/30">
-            <FileText className="w-16 h-16 opacity-20" />
-            <p>Henüz metin çıkarılmadı</p>
+          <div className="flex flex-col gap-1 font-mono text-sm">
+            <div className="py-2 mb-4 text-xs alert alert-warning">
+              Warning: Image dimensions missing. Showing list view.
+            </div>
+            {text_lines.map((line: TextLine, idx: number) => {
+              const isHidden = line.layout_labels?.some((lbl) =>
+                hiddenLabels.includes(lbl),
+              );
+              if (isHidden) return null;
+
+              return (
+                <div
+                  key={idx}
+                  className={`rounded px-2 py-1 transition-colors duration-200 cursor-default ${
+                    highlightIndex === idx
+                      ? "bg-primary/20 text-primary"
+                      : "hover:bg-base-200"
+                  }`}
+                  onMouseEnter={() => setHighlightIndex(idx)}
+                  onMouseLeave={() => setHighlightIndex(null)}
+                >
+                  {line.text}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

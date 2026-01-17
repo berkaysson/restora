@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import type { AxiosResponse } from "axios";
@@ -39,6 +39,41 @@ function AppContent() {
     setHiddenLabels((prev) =>
       prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
     );
+  };
+
+  // Resizable Layout Components
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isResizing = useRef(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current || !containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newWidth =
+        ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      setLeftPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // Clamp between 20% and 80%
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing.current) {
+        isResizing.current = false;
+        document.body.style.cursor = "default";
+      }
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.body.style.cursor = "col-resize";
   };
 
   // Reset filters when new data loads
@@ -249,7 +284,7 @@ function AppContent() {
         onClear={handleClear}
       />
 
-      <div className="relative flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden" ref={containerRef}>
         <LoadingOverlay
           isOpen={isOverlayOpen}
           loading={loading}
@@ -258,20 +293,40 @@ function AppContent() {
           onClose={() => setIsOverlayOpen(false)}
         />
 
-        <ImagePreview
-          data={data}
-          highlightIndex={highlightIndex}
-          setHighlightIndex={setHighlightIndex}
-          hiddenLabels={hiddenLabels}
-        />
+        {/* Left Panel: Image Preview */}
+        <div
+          style={{ width: `${leftPanelWidth}%` }}
+          className="h-full relative shrink-0 transition-[width] duration-75 ease-out will-change-[width]"
+        >
+          <ImagePreview
+            data={data}
+            highlightIndex={highlightIndex}
+            setHighlightIndex={setHighlightIndex}
+            hiddenLabels={hiddenLabels}
+          />
+        </div>
 
-        <TextEditor
-          data={data}
-          highlightIndex={highlightIndex}
-          setHighlightIndex={setHighlightIndex}
-          hiddenLabels={hiddenLabels}
-          onToggleLabel={toggleLabel}
-        />
+        {/* Resizer Handle */}
+        <div
+          className="w-1.5 h-full cursor-col-resize bg-base-200 hover:bg-primary/50 active:bg-primary z-40 transition-colors flex flex-col justify-center items-center shadow-sm select-none shrink-0"
+          onMouseDown={startResizing}
+        >
+          <div className="w-0.5 h-8 bg-base-content/20 rounded-full" />
+        </div>
+
+        {/* Right Panel: Text Editor */}
+        <div
+          className="h-full relative shrink-0 bg-base-100 transition-[width] duration-75 ease-out will-change-[width]"
+          style={{ width: `calc(100% - ${leftPanelWidth}% - 6px)` }}
+        >
+          <TextEditor
+            data={data}
+            highlightIndex={highlightIndex}
+            setHighlightIndex={setHighlightIndex}
+            hiddenLabels={hiddenLabels}
+            onToggleLabel={toggleLabel}
+          />
+        </div>
       </div>
 
       <LogPanel

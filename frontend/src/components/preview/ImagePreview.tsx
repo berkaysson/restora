@@ -1,15 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import {
-  Image as ImageIcon,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  ChevronUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Maximize,
-} from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
+import { ZoomController } from "../common/ZoomController";
 import type { PageData, TextLine } from "../../types";
 
 interface ImagePreviewProps {
@@ -165,85 +156,18 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   };
 
   return (
-    <div className="relative flex w-1/2 overflow-hidden border-r border-base-content/10 bg-base-200/50 group">
+    <div className="relative flex w-full h-full overflow-hidden bg-base-200/50 group">
       {data && (
         <div className="absolute z-20 flex flex-col items-center gap-4 -translate-x-1/2 bottom-8 left-1/2">
           {/* Main Control Island */}
-          <div className="flex items-center gap-2 p-1 border shadow-2xl bg-base-300/90 backdrop-blur-xl rounded-2xl border-white/10 ring-1 ring-black/20">
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-1 px-2 border-r border-white/5">
-              <button
-                onClick={handleZoomOut}
-                className="transition-colors btn btn-ghost btn-circle btn-sm hover:bg-primary/20 hover:text-primary"
-                title="Uzaklaştır (Ctrl + Scroll)"
-              >
-                <ZoomOut size={18} />
-              </button>
-              <div className="flex flex-col items-center min-w-12">
-                <span className="font-mono text-xs font-black text-primary">
-                  {Math.round(zoom * 100)}%
-                </span>
-              </div>
-              <button
-                onClick={handleZoomIn}
-                className="transition-colors btn btn-ghost btn-circle btn-sm hover:bg-primary/20 hover:text-primary"
-                title="Yakınlaştır (Ctrl + Scroll)"
-              >
-                <ZoomIn size={18} />
-              </button>
-              <button
-                onClick={handleResetZoom}
-                className="transition-colors btn btn-ghost btn-circle btn-sm text-error hover:bg-warning/20"
-                title="100% (Sıfırla)"
-              >
-                <RotateCcw size={16} />
-              </button>
-              <button
-                onClick={handleFitContent}
-                className="transition-colors btn btn-ghost btn-circle btn-sm text-success hover:bg-success/20"
-                title="Ekrana Sığdır"
-              >
-                <Maximize size={16} />
-              </button>
-            </div>
-
-            {/* Navigation Pad */}
-            <div className="flex items-center gap-1 px-1">
-              <div className="grid grid-cols-3 gap-0.5">
-                <div />
-                <button
-                  onClick={() => scrollBy(0, -150)}
-                  className="btn btn-ghost btn-xs btn-circle hover:bg-primary/20"
-                >
-                  <ChevronUp size={16} />
-                </button>
-                <div />
-                <button
-                  onClick={() => scrollBy(-150, 0)}
-                  className="btn btn-ghost btn-xs btn-circle hover:bg-primary/20"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <div className="flex items-center justify-center p-0.5 rounded-full bg-primary/10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                </div>
-                <button
-                  onClick={() => scrollBy(150, 0)}
-                  className="btn btn-ghost btn-xs btn-circle hover:bg-primary/20"
-                >
-                  <ChevronRight size={16} />
-                </button>
-                <div />
-                <button
-                  onClick={() => scrollBy(0, 150)}
-                  className="btn btn-ghost btn-xs btn-circle hover:bg-primary/20"
-                >
-                  <ChevronDown size={16} />
-                </button>
-                <div />
-              </div>
-            </div>
-          </div>
+          <ZoomController
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onResetZoom={handleResetZoom}
+            onFitContent={handleFitContent}
+            onScroll={scrollBy}
+          />
         </div>
       )}
 
