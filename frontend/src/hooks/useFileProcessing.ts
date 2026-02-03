@@ -1,3 +1,12 @@
+/**
+ * @fileoverview File processing hook for document upload and OCR.
+ *
+ * Provides functions for uploading new documents and reprocessing
+ * existing ones through the OCR backend.
+ *
+ * @module hooks/useFileProcessing
+ */
+
 import { useCallback } from "react";
 import axios, { type AxiosResponse } from "axios";
 import { useLayout } from "../context/LayoutContext";
@@ -5,6 +14,28 @@ import { useAnalysis } from "../context/AnalysisContext";
 import { useLogs } from "../context/LogContext";
 import { fixTurkishHyphens } from "../utils/textUtils";
 
+/**
+ * Hook for handling file uploads and OCR processing.
+ *
+ * Manages the complete file processing lifecycle including:
+ * - File upload with progress tracking
+ * - Backend communication via axios
+ * - Response parsing and state updates
+ * - Error handling and user feedback
+ *
+ * @returns Object containing file handling functions
+ *
+ * @example
+ * ```tsx
+ * const { handleUpload, handleOpenFile } = useFileProcessing();
+ *
+ * // For file input element
+ * <input type="file" onChange={handleUpload} accept=".pdf,.jpg,.png" />
+ *
+ * // For reopening existing job
+ * <button onClick={() => handleOpenFile(job.id)}>Open</button>
+ * ```
+ */
 export function useFileProcessing() {
   const {
     setLoading,

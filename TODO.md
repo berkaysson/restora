@@ -9,5 +9,6 @@
 - [ ] Manuel text correction before export
 - [ ] Add unit tests and agent instructions
 - [x] Organize backend code with modulizing engine
-- [ ] Document the code better
+- [x] Document the code better
 - [ ] Enchance detected text section
+- [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences.

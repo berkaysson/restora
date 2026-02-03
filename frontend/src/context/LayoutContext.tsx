@@ -1,3 +1,12 @@
+/**
+ * @fileoverview Layout Context for UI layout state management.
+ *
+ * Manages panel sizes, loading states, and overlay visibility
+ * for the main application layout.
+ *
+ * @module context/LayoutContext
+ */
+
 import React, {
   createContext,
   useContext,
@@ -8,25 +17,52 @@ import React, {
   type ReactNode,
 } from "react";
 
+/**
+ * Shape of the Layout context value.
+ */
 interface LayoutContextType {
+  /** Width of the left panel as percentage (0-100) */
   leftPanelWidth: number;
+  /** Set left panel width */
   setLeftPanelWidth: (width: number | ((prev: number) => number)) => void;
+  /** Whether the file list sidebar is open */
   isFileListOpen: boolean;
+  /** Toggle file list visibility */
   setIsFileListOpen: (open: boolean) => void;
+  /** Whether the loading overlay is visible */
   isOverlayOpen: boolean;
+  /** Toggle overlay visibility */
   setIsOverlayOpen: (open: boolean) => void;
+  /** Whether a processing operation is in progress */
   loading: boolean;
+  /** Set loading state */
   setLoading: (loading: boolean) => void;
+  /** Current loading status message */
   loadingMessage: string;
+  /** Set loading message */
   setLoadingMessage: (msg: string) => void;
+  /** Current progress percentage (0-100) */
   progress: number;
+  /** Set progress value */
   setProgress: (progress: number | ((prev: number) => number)) => void;
+  /** Reference to the main container element */
   containerRef: React.RefObject<HTMLDivElement | null>;
+  /** Handler to start panel resizing */
   startResizing: (e: React.MouseEvent) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
+/**
+ * Provider component for application layout state.
+ *
+ * Manages:
+ * - Panel resizing with drag handle
+ * - Loading overlay and progress
+ * - File list sidebar visibility
+ *
+ * @param children - Child components to wrap
+ */
 export function LayoutProvider({ children }: { children: ReactNode }) {
   const [leftPanelWidth, setLeftPanelWidth] = useState(50);
   const [isFileListOpen, setIsFileListOpen] = useState(false);

@@ -1,9 +1,58 @@
+"""
+OCR Inference and Layout Analysis Module.
+
+This module contains the core OCR logic using Surya models. It performs:
+- Text line detection and recognition
+- Document layout analysis (identifying headers, tables, figures, etc.)
+- Fusion of text content with layout semantic labels
+
+The output provides both raw text and structured layout information
+with bounding boxes, confidence scores, and semantic labels for each line.
+"""
+
 from PIL import Image
 from logger import log_manager
 from . import models
 
 
-async def run_ocr(image_path: str):
+async def run_ocr(image_path: str) -> tuple[str, dict]:
+    """Run OCR detection, recognition, and layout analysis on an image.
+
+    Performs the complete OCR pipeline:
+    1. Loads the image using PIL
+    2. Runs text detection to find text line locations
+    3. Runs text recognition to read the content
+    4. Runs layout analysis to identify semantic regions
+    5. Fuses text lines with layout labels based on geometric overlap
+
+    Args:
+        image_path: Path to the image file to process.
+            Must be a valid image format (JPG, PNG, etc.).
+
+    Returns:
+        A tuple containing:
+            - full_text (str): All extracted text joined by newlines.
+            - layout_json (dict): Structured layout data with keys:
+                - text_lines (list): List of text line objects, each containing:
+                    - text: The recognized text content
+                    - confidence: OCR confidence score (0-1)
+                    - bbox: Bounding box [x1, y1, x2, y2]
+                    - polygon: Polygon coordinates for the text region
+                    - layout_labels: Semantic labels (e.g., ["Header", "Text"])
+                - layout_blocks (list): Detected layout regions
+                - width: Image width in pixels
+                - height: Image height in pixels
+
+    Note:
+        Layout label assignment uses center-point containment:
+        A text line is assigned a layout label if its center point
+        falls within the layout block's bounding box.
+
+    Example:
+        >>> text, layout = await run_ocr("uploads/page.jpg")
+        >>> for line in layout["text_lines"]:
+        ...     print(f"{line['layout_labels']}: {line['text']}")
+    """
     pil_img = Image.open(image_path)
     full_text = ""
     layout_json = {}

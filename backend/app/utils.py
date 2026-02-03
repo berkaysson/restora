@@ -1,3 +1,10 @@
+"""
+OCR Processing Utilities.
+
+This module provides helper functions for the OCR workflow,
+including text processing and spellchecking functionality.
+"""
+
 import json
 import os
 from spellchecker import SpellChecker
@@ -5,12 +12,41 @@ from logger import log_manager
 from ocr_engine import process_page
 
 
-# Şimdilik language=None diyoruz çünkü Türkçe sözlük dosyasını henüz indirmedik.
-# Bu sayede kod patlamaz, sadece henüz düzeltme yapmaz.
+# SpellChecker instance for typo detection
+# Note: language=None disables dictionary-based checking until Turkish dict is added
 spell = SpellChecker(language=None)
 
 
-async def process_ocr_and_spellcheck(file_path: str, job_id: str):
+async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> dict:
+    """Process a file through OCR and perform spellcheck analysis.
+
+    This is the main processing pipeline that:
+    1. Runs OCR on the uploaded file
+    2. Analyzes extracted text for potential typos
+    3. Saves results to a JSON file
+    4. Returns the complete result object
+
+    Args:
+        file_path: Absolute path to the file to process (PDF or image).
+        job_id: Unique identifier for this processing job.
+
+    Returns:
+        Dictionary containing:
+            - status: "success" or "error"
+            - job_id: The processing job identifier
+            - clean_image: Path to the processed image
+            - text: Full extracted text content
+            - layout: Layout analysis with text_lines and layout_blocks
+            - typos: List of potentially misspelled words
+
+    Note:
+        Results are also saved to 'results.json' in the job directory.
+
+    Example:
+        >>> result = await process_ocr_and_spellcheck("uploads/123/doc.pdf", "123")
+        >>> if result["status"] == "success":
+        ...     print(f"Found {len(result['typos'])} typos")
+    """
     try:
         await log_manager.log("Starting OCR processing...", "backend")
         # 1. Önce OCR yap

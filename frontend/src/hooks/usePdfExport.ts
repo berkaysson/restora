@@ -1,11 +1,45 @@
+/**
+ * @fileoverview PDF export hook for searchable PDF generation.
+ *
+ * Creates searchable PDFs from OCR results by positioning extracted
+ * text at the original coordinates from the source document.
+ *
+ * @module hooks/usePdfExport
+ */
+
 import { useCallback } from "react";
 import { jsPDF } from "jspdf";
 import { useAnalysis } from "../context/AnalysisContext";
 import RobotoRegular from "../assets/Roboto-Regular.ttf";
 
+/**
+ * Hook for exporting OCR results as searchable PDF documents.
+ *
+ * Generates a PDF with text positioned at the original bounding box
+ * coordinates from the OCR analysis. The resulting PDF maintains
+ * the visual layout while being fully searchable.
+ *
+ * Features:
+ * - Preserves original document dimensions
+ * - Uses Roboto font for Turkish character support
+ * - Text positioned at OCR-detected coordinates
+ *
+ * @returns Object containing the export function
+ *
+ * @example
+ * ```tsx
+ * const { handleExportPdf } = usePdfExport();
+ *
+ * <button onClick={handleExportPdf}>Export Searchable PDF</button>
+ * ```
+ */
 export function usePdfExport() {
   const { data } = useAnalysis();
 
+  /**
+   * Generate and download a searchable PDF from current OCR data.
+   * Uses the clean image dimensions to match the source document layout.
+   */
   const handleExportPdf = useCallback(async () => {
     if (!data || !data.layout?.text_lines) {
       alert("OCR verisi bulunamadı.");
