@@ -37,6 +37,14 @@ interface AnalysisContextType {
   toggleLabel: (label: string) => void;
   /** Clear all analysis data and reset state */
   clearAnalysis: () => void;
+  /** Index of the text line currently being edited, null if not editing */
+  editingIndex: number | null;
+  /** Set the editing line index */
+  setEditingIndex: (index: number | null) => void;
+  /** Update the text content of a specific line */
+  updateTextLine: (index: number, newText: string) => void;
+  /** Delete a text line completely */
+  deleteTextLine: (index: number) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -62,6 +70,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageData | null>(null);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
   const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const toggleLabel = useCallback((label: string) => {
     setHiddenLabels((prev) =>
@@ -73,6 +82,38 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setData(null);
     setHighlightIndex(null);
     setHiddenLabels([]);
+    setEditingIndex(null);
+  }, []);
+
+  const updateTextLine = useCallback((index: number, newText: string) => {
+    setData((prev) => {
+      if (!prev || !prev.layout?.text_lines) return prev;
+      const newTextLines = [...prev.layout.text_lines];
+      newTextLines[index] = { ...newTextLines[index], text: newText };
+      return {
+        ...prev,
+        layout: {
+          ...prev.layout,
+          text_lines: newTextLines,
+        },
+      };
+    });
+  }, []);
+
+  const deleteTextLine = useCallback((index: number) => {
+    setData((prev) => {
+      if (!prev || !prev.layout?.text_lines) return prev;
+      const newTextLines = prev.layout.text_lines.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        layout: {
+          ...prev.layout,
+          text_lines: newTextLines,
+        },
+      };
+    });
+    // Clear editing state if deleted line was being edited
+    setEditingIndex(null);
   }, []);
 
   const value = useMemo(
@@ -85,8 +126,21 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setHiddenLabels,
       toggleLabel,
       clearAnalysis,
+      editingIndex,
+      setEditingIndex,
+      updateTextLine,
+      deleteTextLine,
     }),
-    [data, highlightIndex, hiddenLabels, toggleLabel, clearAnalysis],
+    [
+      data,
+      highlightIndex,
+      hiddenLabels,
+      toggleLabel,
+      clearAnalysis,
+      editingIndex,
+      updateTextLine,
+      deleteTextLine,
+    ],
   );
 
   return (

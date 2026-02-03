@@ -1,14 +1,24 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Pencil, Check, X, Trash2 } from "lucide-react";
 import { ZoomController } from "../common/ZoomController";
 import type { TextLine } from "../../types";
 import { useAnalysis } from "../../context/AnalysisContext";
 import { useEditor } from "../../context/EditorContext";
 
 export const TextEditor: React.FC = () => {
-  const { data, highlightIndex, setHighlightIndex, hiddenLabels, toggleLabel } =
-    useAnalysis();
+  const {
+    data,
+    highlightIndex,
+    setHighlightIndex,
+    hiddenLabels,
+    toggleLabel,
+    editingIndex,
+    setEditingIndex,
+    updateTextLine,
+    deleteTextLine,
+  } = useAnalysis();
   const { fontSize } = useEditor();
+  const [editText, setEditText] = useState("");
 
   const [zoom, setZoom] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -105,6 +115,41 @@ export const TextEditor: React.FC = () => {
     });
     return Array.from(labels).sort();
   }, [data]);
+
+  // Editing handlers
+  const startEditing = useCallback(
+    (idx: number, currentText: string) => {
+      setEditingIndex(idx);
+      setEditText(currentText);
+    },
+    [setEditingIndex],
+  );
+
+  const saveEdit = useCallback(() => {
+    if (editingIndex !== null) {
+      updateTextLine(editingIndex, editText);
+      setEditingIndex(null);
+      setEditText("");
+    }
+  }, [editingIndex, editText, updateTextLine, setEditingIndex]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingIndex(null);
+    setEditText("");
+  }, [setEditingIndex]);
+
+  // Handle keyboard shortcuts for editing
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveEdit();
+      } else if (e.key === "Escape") {
+        cancelEdit();
+      }
+    },
+    [saveEdit, cancelEdit],
+  );
 
   const { width, height, text_lines } = data?.layout || {};
   const hasDimensions = !!(width && height);
@@ -259,7 +304,7 @@ export const TextEditor: React.FC = () => {
                       highlightIndex === idx
                         ? "bg-primary/20 text-primary z-50 border-primary"
                         : "hover:bg-primary/5 text-base-content"
-                    }`}
+                    } ${editingIndex === idx ? "z-[60] border-primary bg-primary/10" : ""}`}
                     style={{
                       left: `${left}%`,
                       top: `${top}%`,
@@ -272,18 +317,87 @@ export const TextEditor: React.FC = () => {
                     onMouseEnter={() => setHighlightIndex(idx)}
                     onMouseLeave={() => setHighlightIndex(null)}
                   >
-                    <span
-                      className="block w-full h-full px-px"
-                      style={{
-                        fontSize: "clamp(6px, 100%, 48px)",
-                      }}
-                    >
-                      {line.text}
-                    </span>
-                    <div className="absolute left-0 hidden px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 group-hover:block bg-neutral text-neutral-content whitespace-nowrap z-100">
-                      {line.text} (
-                      {line.layout_labels?.join(", ") || "No Label"})
-                    </div>
+                    {editingIndex === idx ? (
+                      // Editing mode
+                      <div
+                        className="absolute inset-0 flex items-center gap-1 p-1 -m-1 rounded bg-base-100 shadow-lg ring-2 ring-primary"
+                        style={{ minWidth: "300px" }}
+                      >
+                        <input
+                          type="text"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
+                          className="flex-1 px-2 py-1 text-sm border rounded input input-sm input-bordered bg-base-100 text-base-content"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveEdit();
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="btn btn-xs btn-success btn-circle"
+                          title="Kaydet (Enter)"
+                        >
+                          <Check className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelEdit();
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="btn btn-xs btn-error btn-circle"
+                          title="İptal (Escape)"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      // Normal display
+                      <>
+                        <span
+                          className="block w-full h-full px-px"
+                          style={{
+                            fontSize: "clamp(6px, 100%, 48px)",
+                          }}
+                        >
+                          {line.text}
+                        </span>
+                        {/* Action buttons - visible on hover, top-right */}
+                        <div className="absolute flex gap-1 transition-opacity opacity-0 -top-1 -right-1 group-hover:opacity-100">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditing(idx, line.text);
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="flex items-center justify-center w-5 h-5 rounded bg-primary text-primary-content hover:bg-primary-focus shadow-md"
+                            title="Metni düzenle"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTextLine(idx);
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="flex items-center justify-center w-5 h-5 rounded bg-error text-error-content hover:bg-error/80 shadow-md"
+                            title="Satırı sil"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="absolute left-0 hidden px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 group-hover:block bg-neutral text-neutral-content whitespace-nowrap z-100">
+                          {line.text} (
+                          {line.layout_labels?.join(", ") || "No Label"})
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -303,16 +417,82 @@ export const TextEditor: React.FC = () => {
               return (
                 <div
                   key={idx}
-                  className={`rounded px-2 py-1 transition-colors duration-200 cursor-default ${
+                  className={`relative rounded px-2 py-1 transition-colors duration-200 cursor-default group ${
                     highlightIndex === idx
                       ? "bg-primary/20 text-primary"
                       : "hover:bg-base-200"
-                  }`}
+                  } ${editingIndex === idx ? "bg-primary/10 ring-2 ring-primary" : ""}`}
                   style={{ fontSize: `${fontSize}px` }}
                   onMouseEnter={() => setHighlightIndex(idx)}
                   onMouseLeave={() => setHighlightIndex(null)}
                 >
-                  {line.text}
+                  {editingIndex === idx ? (
+                    // Editing mode
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        onKeyDown={handleEditKeyDown}
+                        className="flex-1 px-2 py-1 text-sm border rounded input input-sm input-bordered bg-base-100 text-base-content"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          saveEdit();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="btn btn-xs btn-success btn-circle"
+                        title="Kaydet (Enter)"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cancelEdit();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="btn btn-xs btn-error btn-circle"
+                        title="İptal (Escape)"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    // Normal display
+                    <>
+                      {line.text}
+                      {/* Action buttons - visible on hover, top-right */}
+                      <div className="absolute flex gap-1 transition-opacity opacity-0 top-1 right-1 group-hover:opacity-100">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditing(idx, line.text);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center w-5 h-5 rounded bg-primary text-primary-content hover:bg-primary-focus shadow-md"
+                          title="Metni düzenle"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTextLine(idx);
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center w-5 h-5 rounded bg-error text-error-content hover:bg-error/80 shadow-md"
+                          title="Satırı sil"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               );
             })}
