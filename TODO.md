@@ -11,5 +11,6 @@
 - [x] Organize backend code with modulizing engine
 - [x] Document the code better
 - [ ] Enchance detected text section
-- [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences. Wecan do this while exporting, maybe a button to make section locked and fixed.
-- [ ] Code split in text editor and other big frontend components.
+- [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
+- [x] Code split in text editor and other big frontend components.
+- [ ] Add more gestures to use detected text section.

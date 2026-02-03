@@ -40,6 +40,7 @@ export const TextEditor: React.FC = () => {
   } = useAnalysis();
   const { fontSize } = useEditor();
   const [editText, setEditText] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -160,6 +161,15 @@ export const TextEditor: React.FC = () => {
           backgroundSize: "24px 24px",
         }}
         onMouseDown={handleMouseDown}
+        onClick={(e) => {
+          // Deselect when clicking on the background (not on a text line)
+          if (
+            e.target === e.currentTarget ||
+            (e.target as HTMLElement).closest("[data-text-line]") === null
+          ) {
+            setSelectedIndex(null);
+          }
+        }}
       >
         {hasDimensions ? (
           <PositionedView
@@ -169,10 +179,12 @@ export const TextEditor: React.FC = () => {
             documentWidth={width!}
             documentHeight={height!}
             highlightIndex={highlightIndex}
+            selectedIndex={selectedIndex}
             editingIndex={editingIndex}
             editText={editText}
             isLineHidden={isLineHidden}
             onHighlightChange={setHighlightIndex}
+            onSelect={setSelectedIndex}
             onEditTextChange={setEditText}
             onStartEditing={startEditing}
             onSaveEdit={saveEdit}
@@ -184,10 +196,12 @@ export const TextEditor: React.FC = () => {
             textLines={text_lines}
             fontSize={fontSize}
             highlightIndex={highlightIndex}
+            selectedIndex={selectedIndex}
             editingIndex={editingIndex}
             editText={editText}
             isLineHidden={isLineHidden}
             onHighlightChange={setHighlightIndex}
+            onSelect={setSelectedIndex}
             onEditTextChange={setEditText}
             onStartEditing={startEditing}
             onSaveEdit={saveEdit}
@@ -211,10 +225,12 @@ interface PositionedViewProps {
   documentWidth: number;
   documentHeight: number;
   highlightIndex: number | null;
+  selectedIndex: number | null;
   editingIndex: number | null;
   editText: string;
   isLineHidden: (line: TextLine) => boolean | undefined;
   onHighlightChange: (idx: number | null) => void;
+  onSelect: (idx: number | null) => void;
   onEditTextChange: (text: string) => void;
   onStartEditing: (idx: number, text: string) => void;
   onSaveEdit: () => void;
@@ -232,10 +248,12 @@ const PositionedView: React.FC<PositionedViewProps> = ({
   documentWidth,
   documentHeight,
   highlightIndex,
+  selectedIndex,
   editingIndex,
   editText,
   isLineHidden,
   onHighlightChange,
+  onSelect,
   onEditTextChange,
   onStartEditing,
   onSaveEdit,
@@ -266,6 +284,7 @@ const PositionedView: React.FC<PositionedViewProps> = ({
             line={line}
             idx={idx}
             isHighlighted={highlightIndex === idx}
+            isSelected={selectedIndex === idx}
             isEditing={editingIndex === idx}
             editText={editText}
             documentWidth={documentWidth}
@@ -273,6 +292,7 @@ const PositionedView: React.FC<PositionedViewProps> = ({
             aspectRatio={aspectRatio}
             onMouseEnter={() => onHighlightChange(idx)}
             onMouseLeave={() => onHighlightChange(null)}
+            onClick={() => onSelect(selectedIndex === idx ? null : idx)}
             onEditTextChange={onEditTextChange}
             onSave={onSaveEdit}
             onCancel={onCancelEdit}
@@ -289,10 +309,12 @@ interface ListViewProps {
   textLines: TextLine[];
   fontSize: number;
   highlightIndex: number | null;
+  selectedIndex: number | null;
   editingIndex: number | null;
   editText: string;
   isLineHidden: (line: TextLine) => boolean | undefined;
   onHighlightChange: (idx: number | null) => void;
+  onSelect: (idx: number | null) => void;
   onEditTextChange: (text: string) => void;
   onStartEditing: (idx: number, text: string) => void;
   onSaveEdit: () => void;
@@ -307,10 +329,12 @@ const ListView: React.FC<ListViewProps> = ({
   textLines,
   fontSize,
   highlightIndex,
+  selectedIndex,
   editingIndex,
   editText,
   isLineHidden,
   onHighlightChange,
+  onSelect,
   onEditTextChange,
   onStartEditing,
   onSaveEdit,
@@ -330,11 +354,13 @@ const ListView: React.FC<ListViewProps> = ({
           line={line}
           idx={idx}
           isHighlighted={highlightIndex === idx}
+          isSelected={selectedIndex === idx}
           isEditing={editingIndex === idx}
           editText={editText}
           fontSize={fontSize}
           onMouseEnter={() => onHighlightChange(idx)}
           onMouseLeave={() => onHighlightChange(null)}
+          onClick={() => onSelect(selectedIndex === idx ? null : idx)}
           onEditTextChange={onEditTextChange}
           onSave={onSaveEdit}
           onCancel={onCancelEdit}

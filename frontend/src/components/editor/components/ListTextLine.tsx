@@ -7,11 +7,13 @@ interface ListTextLineProps {
   line: TextLine;
   idx: number;
   isHighlighted: boolean;
+  isSelected: boolean;
   isEditing: boolean;
   editText: string;
   fontSize: number;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClick: () => void;
   onEditTextChange: (text: string) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -20,32 +22,50 @@ interface ListTextLineProps {
 }
 
 /**
- * A text line displayed in list format (fallback when no dimensions available)
+ * A text line displayed in list format (fallback when no dimensions available).
+ * Supports click-to-select behavior where actions persist until deselected.
  */
 export const ListTextLine: React.FC<ListTextLineProps> = ({
   line,
   idx,
   isHighlighted,
+  isSelected,
   isEditing,
   editText,
   fontSize,
   onMouseEnter,
   onMouseLeave,
+  onClick,
   onEditTextChange,
   onSave,
   onCancel,
   onStartEdit,
   onDelete,
 }) => {
+  // Determine if actions should be visible
+  const isActive = isHighlighted || isSelected;
+
+  // Determine visual state classes
+  const stateClasses = isEditing
+    ? "bg-primary/10 ring-2 ring-primary"
+    : isSelected
+      ? "bg-primary/15 text-primary ring-1 ring-primary/80"
+      : isHighlighted
+        ? "bg-primary/20 text-primary"
+        : "hover:bg-base-200";
+
   return (
     <div
       key={idx}
-      className={`relative rounded px-2 py-1 transition-colors duration-200 cursor-default group ${
-        isHighlighted ? "bg-primary/20 text-primary" : "hover:bg-base-200"
-      } ${isEditing ? "bg-primary/10 ring-2 ring-primary" : ""}`}
+      data-text-line
+      className={`relative rounded px-2 py-1 transition-colors duration-200 cursor-pointer group ${stateClasses}`}
       style={{ fontSize: `${fontSize}px` }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
     >
       {isEditing ? (
         <TextLineEdit
@@ -58,7 +78,9 @@ export const ListTextLine: React.FC<ListTextLineProps> = ({
       ) : (
         <>
           {line.text}
-          <div className="absolute flex gap-1 transition-opacity opacity-0 top-1 right-1 group-hover:opacity-100">
+          <div
+            className={`absolute flex gap-1 transition-opacity top-1 right-1 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();

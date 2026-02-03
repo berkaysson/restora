@@ -4,17 +4,23 @@ import { Pencil, Trash2 } from "lucide-react";
 interface TextLineActionsProps {
   onEdit: () => void;
   onDelete: () => void;
+  /** When true, actions are always visible. When false/undefined, show on hover only. */
+  isVisible?: boolean;
 }
 
 /**
- * Action buttons (edit/delete) for text lines
+ * Action buttons (edit/delete) for text lines.
+ * Can be controlled to stay visible via isVisible prop (for selected state).
  */
 export const TextLineActions: React.FC<TextLineActionsProps> = ({
   onEdit,
   onDelete,
+  isVisible = false,
 }) => {
   return (
-    <div className="absolute flex gap-1 transition-opacity opacity-0 -top-1 -right-1 group-hover:opacity-100">
+    <div
+      className={`absolute flex gap-1 transition-opacity -top-1 -right-1 ${isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();

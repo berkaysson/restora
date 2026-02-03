@@ -7,6 +7,7 @@ interface PositionedTextLineProps {
   line: TextLine;
   idx: number;
   isHighlighted: boolean;
+  isSelected: boolean;
   isEditing: boolean;
   editText: string;
   documentWidth: number;
@@ -14,6 +15,7 @@ interface PositionedTextLineProps {
   aspectRatio: number;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClick: () => void;
   onEditTextChange: (text: string) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -22,12 +24,14 @@ interface PositionedTextLineProps {
 }
 
 /**
- * A text line positioned absolutely based on its bounding box coordinates
+ * A text line positioned absolutely based on its bounding box coordinates.
+ * Supports click-to-select behavior where actions persist until deselected.
  */
 export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   line,
   idx,
   isHighlighted,
+  isSelected,
   isEditing,
   editText,
   documentWidth,
@@ -35,6 +39,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   aspectRatio,
   onMouseEnter,
   onMouseLeave,
+  onClick,
   onEditTextChange,
   onSave,
   onCancel,
@@ -50,14 +55,21 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   const wPct = (w / documentWidth) * 100;
   const hPct = (h / documentHeight) * 100;
 
+  // Determine visual state classes
+  const isActive = isHighlighted || isSelected;
+  const stateClasses = isEditing
+    ? "z-60 border-primary bg-primary/10"
+    : isSelected
+      ? "z-50 border-primary/80 bg-primary/15 text-primary"
+      : isHighlighted
+        ? "bg-primary/20 text-primary z-50 border-primary"
+        : "hover:bg-primary/5 text-base-content";
+
   return (
     <div
       key={idx}
-      className={`absolute flex items-center hover:z-50 group border border-transparent hover:border-primary/50 rounded transition-colors ${
-        isHighlighted
-          ? "bg-primary/20 text-primary z-50 border-primary"
-          : "hover:bg-primary/5 text-base-content"
-      } ${isEditing ? "z-[60] border-primary bg-primary/10" : ""}`}
+      data-text-line
+      className={`absolute flex items-center hover:z-50 group border border-transparent hover:border-primary/50 rounded transition-colors cursor-pointer ${stateClasses}`}
       style={{
         left: `${left}%`,
         top: `${top}%`,
@@ -69,6 +81,10 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
     >
       {isEditing ? (
         <TextLineEdit
@@ -88,8 +104,14 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
           >
             {line.text}
           </span>
-          <TextLineActions onEdit={onStartEdit} onDelete={onDelete} />
-          <div className="absolute left-0 hidden px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 group-hover:block bg-neutral text-neutral-content whitespace-nowrap z-100">
+          <TextLineActions
+            onEdit={onStartEdit}
+            onDelete={onDelete}
+            isVisible={isActive}
+          />
+          <div
+            className={`absolute left-0 px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 bg-neutral text-neutral-content whitespace-nowrap z-100 ${isActive ? "block" : "hidden group-hover:block"}`}
+          >
             {line.text} ({line.layout_labels?.join(", ") || "No Label"})
           </div>
         </>
