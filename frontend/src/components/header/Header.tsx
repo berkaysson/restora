@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Scan, FolderOpen, Upload, Trash2, Moon, Sun } from "lucide-react";
 import type { PageData } from "../../types";
+import { useLayout } from "../../context/LayoutContext";
+import { useAnalysis } from "../../context/AnalysisContext";
 
 interface HeaderProps {
   loading: boolean;
@@ -17,6 +19,15 @@ export const Header: React.FC<HeaderProps> = ({
   onUpload,
   onClear,
 }) => {
+  const { setCurrentPage } = useLayout();
+  const { setSelectedIndex } = useAnalysis();
+
+  const handleClear = () => {
+    setCurrentPage(1);
+    setSelectedIndex(null);
+    onClear();
+  };
+
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "nord",
   );
@@ -51,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-1 pr-1 md:pr-4 md:border-r md:gap-2 border-base-content/10">
             {data && (
               <button
-                onClick={onClear}
+                onClick={handleClear}
                 disabled={loading}
                 className="hidden btn btn-sm btn-ghost text-error/80 hover:bg-error/10 hover:text-error md:flex"
                 title="Çalışmayı Temizle"
@@ -111,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Mobile Clear Button (only shown on small screens if data exists) */}
           {data && (
             <button
-              onClick={onClear}
+              onClick={handleClear}
               disabled={loading}
               className="flex btn btn-sm btn-square btn-ghost text-error/80 hover:bg-error/10 hover:text-error md:hidden"
               title="Çalışmayı Temizle"

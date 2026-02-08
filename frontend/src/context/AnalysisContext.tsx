@@ -49,6 +49,10 @@ interface AnalysisContextType {
   allPages: PageData[];
   /** Set all pages data */
   setAllPages: (pages: PageData[]) => void;
+  /** Index of the currently selected text line */
+  selectedIndex: number | null;
+  /** Set the selected line index */
+  setSelectedIndex: (index: number | null) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -76,6 +80,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const toggleLabel = useCallback((label: string) => {
     setHiddenLabels((prev) =>
@@ -89,6 +94,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setHiddenLabels([]);
     setEditingIndex(null);
     setAllPages([]);
+    setSelectedIndex(null);
   }, []);
 
   const updateTextLine = useCallback((index: number, newText: string) => {
@@ -106,21 +112,27 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const deleteTextLine = useCallback((index: number) => {
-    setData((prev) => {
-      if (!prev || !prev.layout?.text_lines) return prev;
-      const newTextLines = prev.layout.text_lines.filter((_, i) => i !== index);
-      return {
-        ...prev,
-        layout: {
-          ...prev.layout,
-          text_lines: newTextLines,
-        },
-      };
-    });
-    // Clear editing state if deleted line was being edited
-    setEditingIndex(null);
-  }, []);
+  const deleteTextLine = useCallback(
+    (index: number) => {
+      setData((prev) => {
+        if (!prev || !prev.layout?.text_lines) return prev;
+        const newTextLines = prev.layout.text_lines.filter(
+          (_, i) => i !== index,
+        );
+        return {
+          ...prev,
+          layout: {
+            ...prev.layout,
+            text_lines: newTextLines,
+          },
+        };
+      });
+      // Clear editing state if deleted line was being edited
+      setEditingIndex(null);
+      if (selectedIndex === index) setSelectedIndex(null);
+    },
+    [selectedIndex],
+  );
 
   const value = useMemo(
     () => ({
@@ -138,6 +150,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       deleteTextLine,
       allPages,
       setAllPages,
+      selectedIndex,
+      setSelectedIndex,
     }),
     [
       data,
@@ -149,6 +163,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       updateTextLine,
       deleteTextLine,
       allPages,
+      selectedIndex,
     ],
   );
 

@@ -47,9 +47,11 @@ export function useFileProcessing() {
     setProcessedPages,
     setTotalPages,
     currentPage,
+    setCurrentPage,
   } = useLayout();
 
-  const { setData, setHiddenLabels, setAllPages, allPages } = useAnalysis();
+  const { setData, setHiddenLabels, setAllPages, allPages, setSelectedIndex } =
+    useAnalysis();
   const { addLog, clearLogs } = useLogs();
 
   const processResponse = useCallback(
@@ -67,10 +69,11 @@ export function useFileProcessing() {
       const fixedText = fixTurkishHyphens(res.data.text);
 
       setHiddenLabels([]); // Reset filters
+      setSelectedIndex(null);
       setData({ ...res.data, text: fixedText, layout: parsedLayout });
       addLog(`Frontend: Data successfully updated.`, "frontend");
     },
-    [setData, setHiddenLabels, addLog],
+    [setData, setHiddenLabels, addLog, setSelectedIndex],
   );
 
   const fetchAllPages = useCallback(
@@ -103,6 +106,7 @@ export function useFileProcessing() {
 
         setAllPages(processedPages);
         setTotalPages(processedPages.length);
+        setCurrentPage(1);
 
         // Set initial page data to page 1
         if (processedPages.length > 0) {
@@ -111,6 +115,7 @@ export function useFileProcessing() {
           );
           if (firstPage) {
             setHiddenLabels([]);
+            setSelectedIndex(null);
             setData({
               status: "success",
               job_id: jobId,
@@ -139,6 +144,8 @@ export function useFileProcessing() {
       setAllPages,
       setLoadingMessage,
       setTotalPages,
+      setCurrentPage,
+      setSelectedIndex,
     ],
   );
 
@@ -148,6 +155,7 @@ export function useFileProcessing() {
       const pageData = allPages.find((p) => p.page_number === currentPage);
       if (pageData) {
         setHiddenLabels([]);
+        setSelectedIndex(null);
         setData({
           status: "success",
           job_id: pageData.job_id || "",
@@ -158,7 +166,7 @@ export function useFileProcessing() {
         });
       }
     }
-  }, [currentPage, allPages, setData, setHiddenLabels]);
+  }, [currentPage, allPages, setData, setHiddenLabels, setSelectedIndex]);
 
   // Check queue status periodically or rely on WS?
   // WS is better. We will connect specifically for the job.
@@ -182,6 +190,8 @@ export function useFileProcessing() {
       setProcessedPages(0);
       setTotalPages(0);
       setProgress(0);
+      setCurrentPage(1);
+      setSelectedIndex(null);
 
       let progressInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -334,6 +344,8 @@ export function useFileProcessing() {
       setTotalPages,
       clearLogs,
       fetchAllPages,
+      setCurrentPage,
+      setSelectedIndex,
     ],
   );
 
@@ -348,6 +360,8 @@ export function useFileProcessing() {
       setProcessedPages(0);
       setTotalPages(0);
       setProgress(0);
+      setCurrentPage(1);
+      setSelectedIndex(null);
 
       setLoadingMessage("Dosya açılıyor...");
       addLog(`Frontend: Opening existing job ${jobId}`, "frontend");
@@ -406,6 +420,8 @@ export function useFileProcessing() {
       setProcessedPages,
       setTotalPages,
       fetchAllPages,
+      setCurrentPage,
+      setSelectedIndex,
     ],
   );
 

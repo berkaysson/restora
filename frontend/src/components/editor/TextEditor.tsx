@@ -37,10 +37,11 @@ export const TextEditor: React.FC = () => {
     setEditingIndex,
     updateTextLine,
     deleteTextLine,
+    selectedIndex,
+    setSelectedIndex,
   } = useAnalysis();
   const { fontSize } = useEditor();
   const [editText, setEditText] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
