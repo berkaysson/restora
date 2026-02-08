@@ -24,6 +24,36 @@ from storage_manager import storage_manager
 router = APIRouter()
 
 
+@router.get("/document/{job_id}/all-pages")
+async def get_all_pages(job_id: str) -> dict:
+    """
+    Get all pages for a document.
+
+    Args:
+        job_id: Document identifier
+
+    Returns:
+        dict: Contains 'pages' list with all page data
+    """
+    try:
+        from db_helpers import get_all_document_pages
+
+        pages = get_all_document_pages(job_id)
+
+        # Load OCR data from storage for completed pages
+        for page in pages:
+            if page["status"] == "completed":
+                ocr_data = storage_manager.get_page_ocr(job_id, page["page_number"])
+                if ocr_data:
+                    page["ocr_data"] = ocr_data
+
+        return {"pages": pages, "total": len(pages)}
+
+    except Exception as e:
+        await log_manager.log(f"Error getting all pages: {e}", "backend")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)) -> dict:
     """

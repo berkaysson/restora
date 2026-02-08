@@ -121,7 +121,14 @@ export interface PageData {
   layout: Layout;
 
   /** List of potentially misspelled words (optional) */
-  typos?: string[];
+  typos?: {
+    original: string;
+    suggestions: string[];
+    context: string;
+  }[];
+
+  /** The 0-indexed page number within a multi-page document */
+  page_number?: number;
 }
 
 /**

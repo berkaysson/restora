@@ -57,6 +57,10 @@ interface LayoutContextType {
   totalPages: number;
   /** Set total pages count */
   setTotalPages: (pages: number) => void;
+  /** Current page number being viewed (1-indexed) */
+  currentPage: number;
+  /** Set current page number */
+  setCurrentPage: (page: number) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -80,6 +84,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState(0);
   const [processedPages, setProcessedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
@@ -134,6 +139,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       setProcessedPages,
       totalPages,
       setTotalPages,
+      currentPage,
+      setCurrentPage,
     }),
     [
       leftPanelWidth,
@@ -144,6 +151,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       progress,
       processedPages,
       totalPages,
+      currentPage,
     ],
   );
 

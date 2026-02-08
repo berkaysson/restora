@@ -45,6 +45,10 @@ interface AnalysisContextType {
   updateTextLine: (index: number, newText: string) => void;
   /** Delete a text line completely */
   deleteTextLine: (index: number) => void;
+  /** All pages data for multi-page documents */
+  allPages: PageData[];
+  /** Set all pages data */
+  setAllPages: (pages: PageData[]) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -71,6 +75,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
   const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [allPages, setAllPages] = useState<PageData[]>([]);
 
   const toggleLabel = useCallback((label: string) => {
     setHiddenLabels((prev) =>
@@ -83,6 +88,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setHighlightIndex(null);
     setHiddenLabels([]);
     setEditingIndex(null);
+    setAllPages([]);
   }, []);
 
   const updateTextLine = useCallback((index: number, newText: string) => {
@@ -130,6 +136,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setEditingIndex,
       updateTextLine,
       deleteTextLine,
+      allPages,
+      setAllPages,
     }),
     [
       data,
@@ -140,6 +148,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       editingIndex,
       updateTextLine,
       deleteTextLine,
+      allPages,
     ],
   );
 

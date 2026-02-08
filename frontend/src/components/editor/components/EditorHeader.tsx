@@ -1,5 +1,6 @@
 import React from "react";
 import { ZoomController } from "../../common/ZoomController";
+import { PageNavigator } from "../../common/PageNavigator";
 
 interface EditorHeaderProps {
   lineCount: number;
@@ -47,14 +48,17 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           </span>
         </div>
 
-        <ZoomController
-          zoom={zoom}
-          onZoomIn={onZoomIn}
-          onZoomOut={onZoomOut}
-          onResetZoom={onResetZoom}
-          onFitContent={onFitContent}
-          onScroll={onScroll}
-        />
+        <div className="flex items-center gap-2">
+          <PageNavigator />
+          <ZoomController
+            zoom={zoom}
+            onZoomIn={onZoomIn}
+            onZoomOut={onZoomOut}
+            onResetZoom={onResetZoom}
+            onFitContent={onFitContent}
+            onScroll={onScroll}
+          />
+        </div>
       </div>
 
       {availableLabels.length > 0 && (

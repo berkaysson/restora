@@ -331,6 +331,29 @@ def get_document_pages(
     return [dict(row) for row in rows], total
 
 
+def get_all_document_pages(document_id: str) -> List[Dict[str, Any]]:
+    """
+    Get all pages for a document without pagination.
+
+    Args:
+        document_id: Document identifier
+
+    Returns:
+        List of all page data
+    """
+    conn = get_db_connection()
+    cursor = conn.execute(
+        """SELECT * FROM processed_pages 
+           WHERE document_id = ?
+           ORDER BY page_number""",
+        (document_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
 def delete_document(document_id: str) -> None:
     """
     Delete document and all associated pages.

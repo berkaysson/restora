@@ -29,18 +29,22 @@ export const LogPanel: React.FC<LogPanelProps> = ({
         {onExportPdf && showExportButton && (
           <button
             onClick={onExportPdf}
-            className="btn btn-circle btn-primary shadow-xl"
+            className="shadow-xl btn btn-circle btn-primary"
             title="PDF Olarak İndir"
           >
             <Download className="w-5 h-5" />
           </button>
         )}
 
+        {showOverlayButton && (
+          <div className="w-px h-8 mx-1 bg-base-content/20" />
+        )}
+
         {/* Overlay Trigger Button */}
         {showOverlayButton && (
           <button
             onClick={onOpenOverlay}
-            className="btn btn-circle btn-secondary shadow-xl"
+            className="shadow-xl btn btn-circle btn-secondary"
             title="Yükleme Durumunu Görüntüle"
           >
             <Activity className="w-5 h-5" />
@@ -50,7 +54,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({
         {/* System Logs Trigger Button */}
         <button
           onClick={() => setIsOpen(true)}
-          className="btn btn-circle btn-primary shadow-xl"
+          className="shadow-xl btn btn-circle btn-primary"
           title="Sistem Günlüklerini Aç"
         >
           <Terminal className="w-5 h-5" />

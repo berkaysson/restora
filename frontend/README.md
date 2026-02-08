@@ -6,6 +6,7 @@ This is the frontend for **Restora**, an AI-powered project for digitizing, rest
 
 - **Multi-format Support**: Upload book pages as images (JPG, PNG) or PDFs.
 - **Interactive Document Viewer**: View cleaned images with synchronized bounding boxes. Hover over text in the editor to highlight its location on the image, or vice-versa.
+- **Multi-Page Navigation**: Seamlessly navigate through multi-page PDF documents without reloading. Includes direct page jumping and synchronized state.
 - **Real-time Processing Logs**: Integrated log panel powered by WebSockets, showing live updates from both the frontend and backend.
 - **Extracted Text Editor**: View and edit OCR-extracted text line-by-line.
 - **Historical Gallery**: Access and re-process previously uploaded documents.

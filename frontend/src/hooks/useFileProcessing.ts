@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview File processing hook for document upload and OCR.
  *
@@ -7,7 +8,7 @@
  * @module hooks/useFileProcessing
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import axios, { type AxiosResponse } from "axios";
 import { useLayout } from "../context/LayoutContext";
 import { useAnalysis } from "../context/AnalysisContext";
@@ -45,9 +46,10 @@ export function useFileProcessing() {
     setIsFileListOpen,
     setProcessedPages,
     setTotalPages,
+    currentPage,
   } = useLayout();
 
-  const { setData, setHiddenLabels } = useAnalysis();
+  const { setData, setHiddenLabels, setAllPages, allPages } = useAnalysis();
   const { addLog, clearLogs } = useLogs();
 
   const processResponse = useCallback(
@@ -71,44 +73,92 @@ export function useFileProcessing() {
     [setData, setHiddenLabels, addLog],
   );
 
-  // Helper to fetch first page (memoized to avoid dependency issues if passed around)
-  const fetchFirstPage = useCallback(
+  const fetchAllPages = useCallback(
     async (jobId: string) => {
       try {
+        setLoadingMessage("Tüm sayfalar indiriliyor...");
         const res = await axios.get(
-          `http://localhost:8000/document/${jobId}/page/1`,
+          `http://localhost:8000/document/${jobId}/all-pages`,
         );
-        const pageData = res.data;
+        const { pages } = res.data;
 
-        const layout = pageData.ocr_data?.layout || { text_lines: [] };
-        const text = pageData.ocr_data?.text || "";
+        // Parse layout and fix text for all pages
+        const processedPages = pages.map((page: any) => {
+          const layout = page.ocr_data?.layout || { text_lines: [] };
+          const text = page.ocr_data?.text || "";
 
-        const parsedLayout = (typeof layout === "string"
-          ? JSON.parse(layout)
-          : layout) || { text_lines: [] };
+          const parsedLayout = (typeof layout === "string"
+            ? JSON.parse(layout)
+            : layout) || { text_lines: [] };
 
-        const fixedText = fixTurkishHyphens(text);
+          const fixedText = fixTurkishHyphens(text);
 
+          return {
+            ...page,
+            text: fixedText,
+            layout: parsedLayout,
+            clean_image: page.image_path,
+          };
+        });
+
+        setAllPages(processedPages);
+        setTotalPages(processedPages.length);
+
+        // Set initial page data to page 1
+        if (processedPages.length > 0) {
+          const firstPage = processedPages.find(
+            (p: any) => p.page_number === 1,
+          );
+          if (firstPage) {
+            setHiddenLabels([]);
+            setData({
+              status: "success",
+              job_id: jobId,
+              clean_image: firstPage.clean_image,
+              text: firstPage.text,
+              layout: firstPage.layout,
+              typos: [],
+            });
+          }
+        }
+
+        setLoading(false);
+        addLog(`Frontend: Loaded all pages for job ${jobId}`, "frontend");
+      } catch (e) {
+        console.error("Error fetching all pages", e);
+        addLog(`Frontend: Error fetching all pages: ${e}`, "frontend");
+        setLoading(false);
+        alert("Error loading document pages.");
+      }
+    },
+    [
+      addLog,
+      setData,
+      setHiddenLabels,
+      setLoading,
+      setAllPages,
+      setLoadingMessage,
+      setTotalPages,
+    ],
+  );
+
+  // Update displayed data when currentPage changes
+  useEffect(() => {
+    if (currentPage > 0 && allPages.length > 0) {
+      const pageData = allPages.find((p) => p.page_number === currentPage);
+      if (pageData) {
         setHiddenLabels([]);
         setData({
           status: "success",
-          job_id: jobId,
-          clean_image: pageData.image_path,
-          text: fixedText,
-          layout: parsedLayout,
+          job_id: pageData.job_id || "",
+          clean_image: pageData.clean_image,
+          text: pageData.text,
+          layout: pageData.layout,
           typos: [],
         });
-        setLoading(false);
-        addLog(`Frontend: Loaded page 1 of job ${jobId}`, "frontend");
-      } catch (e) {
-        console.error("Error fetching page 1", e);
-        addLog(`Frontend: Error fetching first page: ${e}`, "frontend");
-        setLoading(false);
-        alert("Error loading document result.");
       }
-    },
-    [addLog, setData, setHiddenLabels, setLoading],
-  ); // Removed fetchFirstPage from its own deps
+    }
+  }, [currentPage, allPages, setData, setHiddenLabels]);
 
   // Check queue status periodically or rely on WS?
   // WS is better. We will connect specifically for the job.
@@ -191,7 +241,7 @@ export function useFileProcessing() {
               if (statusData.status === "completed") {
                 addLog(`Frontend: Job ${jobId} already completed.`, "system");
                 socket.close();
-                fetchFirstPage(jobId);
+                fetchAllPages(jobId);
               }
             } catch (err) {
               console.error("Error fetching initial status", err);
@@ -218,7 +268,7 @@ export function useFileProcessing() {
                 socket.close(); // Close on completion
 
                 setTimeout(() => {
-                  fetchFirstPage(data.job_id);
+                  fetchAllPages(data.job_id);
                 }, 500);
               } else if (data.event === "page_failed") {
                 addLog(
@@ -282,8 +332,8 @@ export function useFileProcessing() {
       processResponse,
       setProcessedPages,
       setTotalPages,
-      fetchFirstPage,
       clearLogs,
+      fetchAllPages,
     ],
   );
 
@@ -310,15 +360,35 @@ export function useFileProcessing() {
       }, 200);
 
       try {
-        const res = await axios.post(
-          `http://localhost:8000/process-existing/${jobId}`,
+        const statusRes = await axios.get(
+          `http://localhost:8000/document/${jobId}/status`,
         );
-        processResponse(res);
+
+        if (
+          statusRes.data.status === "completed" &&
+          statusRes.data.total_pages > 1
+        ) {
+          await fetchAllPages(jobId);
+          setIsOverlayOpen(false);
+        } else {
+          const res = await axios.post(
+            `http://localhost:8000/process-existing/${jobId}`,
+          );
+          processResponse(res);
+        }
         setProgress(100);
       } catch (err) {
         console.error(err);
-        addLog(`Frontend: Error opening job - ${err}`, "frontend");
-        alert(`Hata: ${err instanceof Error ? err.message : "Unknown error"}`);
+        try {
+          const res = await axios.post(
+            `http://localhost:8000/process-existing/${jobId}`,
+          );
+          processResponse(res);
+          setProgress(100);
+        } catch (e) {
+          addLog(`Frontend: Error opening job - ${e}`, "frontend");
+          alert(`Hata: ${e instanceof Error ? e.message : "Unknown error"}`);
+        }
       } finally {
         clearInterval(progressInterval);
         setLoading(false);
@@ -329,15 +399,15 @@ export function useFileProcessing() {
       setIsOverlayOpen,
       setIsFileListOpen,
       setProgress,
-      setProgress,
       setLoadingMessage,
       addLog,
       processResponse,
       clearLogs,
       setProcessedPages,
       setTotalPages,
+      fetchAllPages,
     ],
   );
 
-  return { handleUpload, handleOpenFile };
+  return { handleUpload, handleOpenFile, fetchAllPages };
 }

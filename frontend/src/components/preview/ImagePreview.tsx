@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { ZoomController } from "../common/ZoomController";
+
 import type { TextLine } from "../../types";
 import { useAnalysis } from "../../context/AnalysisContext";
 
@@ -149,7 +150,7 @@ export const ImagePreview: React.FC = () => {
   return (
     <div className="relative flex w-full h-full overflow-hidden bg-base-200/50 group">
       {data && (
-        <div className="absolute z-20 flex flex-col items-center gap-4 -translate-x-1/2 bottom-8 left-1/2">
+        <div className="absolute z-20 flex items-center gap-2 -translate-x-1/2 bottom-8 left-1/2">
           {/* Main Control Island */}
           <ZoomController
             zoom={zoom}

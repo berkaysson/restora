@@ -21,7 +21,7 @@
 - [x] While processing pdf feedback to user with progress and what currently app trying to do
 - [x] Manuel text correction before export
 - [x] Code split in text editor and other big frontend components.
-- [ ] Add multiple page reader in ui with page controls
+- [x] Add multiple page reader in ui with page controls
 - [ ] Enchance detected text section
 - [ ] Add more gestures to use detected text section.
 - [ ] Create focus-mode editor in frontend to quickly clean OCR artifacts (page numbers, headers, noise) before read-aloud.
@@ -33,6 +33,7 @@
 - [x] Export as searchable pdf
 - [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
 - [ ] Add semantic HTML/Markdown export with proper heading structure for browser read-aloud and reader view compatibility.
+- [ ] Export whole pdf with all pages.
 
 ## Testing & Documentation
 
