@@ -48,7 +48,7 @@ export function useFileProcessing() {
   } = useLayout();
 
   const { setData, setHiddenLabels } = useAnalysis();
-  const { addLog } = useLogs();
+  const { addLog, clearLogs } = useLogs();
 
   const processResponse = useCallback(
     (res: AxiosResponse) => {
@@ -126,6 +126,12 @@ export function useFileProcessing() {
 
       const formData = new FormData();
       formData.append("file", file);
+
+      // Reset state for new upload
+      clearLogs();
+      setProcessedPages(0);
+      setTotalPages(0);
+      setProgress(0);
 
       let progressInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -277,6 +283,7 @@ export function useFileProcessing() {
       setProcessedPages,
       setTotalPages,
       fetchFirstPage,
+      clearLogs,
     ],
   );
 
@@ -285,7 +292,13 @@ export function useFileProcessing() {
       setLoading(true);
       setIsOverlayOpen(true);
       setIsFileListOpen(false);
+
+      // Reset state for new job open
+      clearLogs();
+      setProcessedPages(0);
+      setTotalPages(0);
       setProgress(0);
+
       setLoadingMessage("Dosya açılıyor...");
       addLog(`Frontend: Opening existing job ${jobId}`, "frontend");
 
@@ -316,9 +329,13 @@ export function useFileProcessing() {
       setIsOverlayOpen,
       setIsFileListOpen,
       setProgress,
+      setProgress,
       setLoadingMessage,
       addLog,
       processResponse,
+      clearLogs,
+      setProcessedPages,
+      setTotalPages,
     ],
   );
 

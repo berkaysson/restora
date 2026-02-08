@@ -83,7 +83,8 @@ export const MainLayout = () => {
 
       <LogPanel
         onOpenOverlay={() => setIsOverlayOpen(true)}
-        showOverlayButton={!!data}
+        showOverlayButton={!!data || loading}
+        showExportButton={!!data && !loading}
         onExportPdf={handleExportPdf}
       />
     </div>

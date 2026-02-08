@@ -5,12 +5,14 @@ import { Terminal, Activity, Download } from "lucide-react";
 interface LogPanelProps {
   onOpenOverlay: () => void;
   showOverlayButton?: boolean;
+  showExportButton?: boolean;
   onExportPdf?: () => void;
 }
 
 export const LogPanel: React.FC<LogPanelProps> = ({
   onOpenOverlay,
   showOverlayButton = false,
+  showExportButton = false,
   onExportPdf,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +26,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({
         }`}
       >
         {/* PDF Export Button */}
-        {onExportPdf && showOverlayButton && (
+        {onExportPdf && showExportButton && (
           <button
             onClick={onExportPdf}
             className="btn btn-circle btn-primary shadow-xl"
