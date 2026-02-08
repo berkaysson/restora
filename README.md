@@ -10,6 +10,7 @@ The project consists of a **FastAPI** backend for image processing and a **React
 - **AI-Powered OCR**: Utilizes [Surya OCR](https://github.com/VikParuchuri/surya) (with Segformer and recognition models) for high-accuracy text detection and reading, capable of handling complex layouts.
 - **Layout Analysis**: Extracts and provides coordinate-based layout information (bounding boxes) for text lines.
 - **Database Integration**: Stores book metadata, page images, raw text, and layout JSON in a localized SQLite database.
+- **Searchable PDF Export**: Generate multi-page searchable PDFs from processed images, with support for page range selection.
 - **Modern UI**: A responsive frontend built with React, TypeScript, and TailwindCSS for easy uploading and viewing of results.
 
 ---
@@ -138,6 +139,7 @@ restora/
     - **Surya OCR** detects text lines and reads the content, returning text and bounding box coordinates.
 3.  **Storage**: The original image, clean image path, extracted text, and layout JSON are saved to the `pages` table in SQLite.
 4.  **Display**: The frontend displays the cleaned image and the extracted text to the user.
+5.  **Export**: Users can export the entire document or a selected range of pages as a searchable PDF.
 
 ## ⚠️ Notes
 
