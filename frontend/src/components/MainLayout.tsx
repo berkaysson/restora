@@ -19,6 +19,8 @@ export const MainLayout = () => {
     loading,
     loadingMessage,
     progress,
+    processedPages,
+    totalPages,
     containerRef,
     startResizing,
   } = useLayout();
@@ -49,6 +51,8 @@ export const MainLayout = () => {
           loading={loading}
           message={loadingMessage}
           progress={progress}
+          processedPages={processedPages}
+          totalPages={totalPages}
           onClose={() => setIsOverlayOpen(false)}
         />
 

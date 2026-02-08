@@ -13,7 +13,7 @@
 ## Database & Storage
 
 - [x] Store extracted text data in uploads folder as json
-- [ ] Process each pages and store in database
+- [x] Process each pages and store in database
 - [ ] Add "cleaned_text" column in restora.db to store post-processed text separately while preserving original OCR output.
 
 ## Frontend & UI
@@ -21,6 +21,7 @@
 - [x] While processing pdf feedback to user with progress and what currently app trying to do
 - [x] Manuel text correction before export
 - [x] Code split in text editor and other big frontend components.
+- [ ] Add multiple page reader in ui with page controls
 - [ ] Enchance detected text section
 - [ ] Add more gestures to use detected text section.
 - [ ] Create focus-mode editor in frontend to quickly clean OCR artifacts (page numbers, headers, noise) before read-aloud.

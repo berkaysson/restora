@@ -7,6 +7,8 @@ interface LoadingOverlayProps {
   loading: boolean;
   message?: string;
   progress?: number;
+  processedPages?: number;
+  totalPages?: number;
   onClose: () => void;
 }
 
@@ -15,6 +17,8 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   loading,
   message = "İşleniyor...",
   progress = 0,
+  processedPages = 0,
+  totalPages = 0,
   onClose,
 }) => {
   const { logs } = useLogs();
@@ -66,7 +70,11 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
               <span>
                 {isCompleted ? "Belge başarıyla analiz edildi" : message}
               </span>
-              <span>{Math.round(progress)}%</span>
+              <span>
+                {totalPages > 0
+                  ? `${processedPages} / ${totalPages} Sayfa`
+                  : `${Math.round(progress)}%`}
+              </span>
             </div>
             <progress
               className={`w-full h-3 progress ${

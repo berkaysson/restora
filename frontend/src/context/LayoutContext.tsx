@@ -49,6 +49,14 @@ interface LayoutContextType {
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** Handler to start panel resizing */
   startResizing: (e: React.MouseEvent) => void;
+  /** Number of pages processed so far */
+  processedPages: number;
+  /** Set processed pages count */
+  setProcessedPages: (pages: number) => void;
+  /** Total number of pages in the document */
+  totalPages: number;
+  /** Set total pages count */
+  setTotalPages: (pages: number) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -70,6 +78,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("İşleniyor...");
   const [progress, setProgress] = useState(0);
+  const [processedPages, setProcessedPages] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
@@ -120,6 +130,10 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       setProgress,
       containerRef,
       startResizing,
+      processedPages,
+      setProcessedPages,
+      totalPages,
+      setTotalPages,
     }),
     [
       leftPanelWidth,
@@ -128,6 +142,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       loading,
       loadingMessage,
       progress,
+      processedPages,
+      totalPages,
     ],
   );
 
