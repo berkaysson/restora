@@ -64,7 +64,7 @@ export const ZoomController: React.FC<ZoomControllerProps> = ({
         {onFitContent && (
           <button
             onClick={onFitContent}
-            className="transition-colors btn btn-ghost btn-circle btn-sm text-success hover:bg-success/20"
+            className="transition-colors btn btn-ghost btn-circle btn-sm hover:bg-success/20"
             title="Ekrana Sığdır"
           >
             <Maximize size={16} />
