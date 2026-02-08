@@ -140,4 +140,13 @@ export interface UploadJob {
 
   /** List of generated files (clean images, JSON results) */
   processed_files: string[];
+
+  /** Original filename from metadata (optional) */
+  filename?: string;
+
+  /** Total number of pages (optional) */
+  total_pages?: number;
+
+  /** Job type (optional) */
+  type?: string;
 }

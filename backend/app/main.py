@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os, time
 from database import init_db
 from logger import log_manager
-from app.routers import ocr, logs
+from app.routers import ocr, logs, pdf, websocket
 
 app = FastAPI()
 
@@ -42,9 +42,20 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+# Startup and Shutdown Events
 @app.on_event("startup")
-async def startup():
-    await log_manager.log("System: Application startup initiated.", "system")
+async def startup_event():  # Renamed from startup
+    """Initialize application on startup."""
+    await log_manager.log(
+        "FastAPI: Application starting...", "backend"
+    )  # Changed log message
+
+    # Start processing queue
+    from queue_manager import processing_queue
+    import asyncio
+
+    asyncio.create_task(processing_queue.start_processing())
+
     # Also ensure uploads exists here just in case logging needs it or logic
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
@@ -59,5 +70,19 @@ async def startup():
         )
 
 
-app.include_router(ocr.router)
-app.include_router(logs.router)
+# Register API Routers
+app.include_router(ocr.router, tags=["OCR (Legacy)"])
+app.include_router(logs.router, tags=["Logs"])
+app.include_router(pdf.router, tags=["PDF Processing"])
+app.include_router(websocket.router, tags=["Real-time Updates"])
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up on shutdown."""
+    await log_manager.log("FastAPI: Application shutting down...", "backend")
+
+    # Stop processing queue
+    from queue_manager import processing_queue
+
+    await processing_queue.stop_processing()

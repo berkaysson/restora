@@ -62,7 +62,40 @@ FastAPI provides automatic interactive documentation:
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-## Key Endpoints
+## Multi-Page PDF Processing
+
+The backend now supports asynchronous processing of large multi-page PDF documents. This system uses a job queue and worker architecture to handle long-running OCR tasks without blocking the API.
+
+### Architecture
+
+- **Queue Manager**: Manages asynchronous processing jobs and workers.
+- **Storage Manager**: Handles hierarchical file storage for jobs, pages, and assets.
+- **WebSockets**: Provides real-time progress updates to the frontend.
+
+### New API Endpoints
+
+#### Document Management
+
+- **`POST /upload-pdf`**: Upload a multi-page PDF. Returns a `job_id`.
+- **`GET /documents`**: List all document processing jobs.
+- **`DELETE /document/{job_id}`**: Delete a document and all associated data.
+- **`POST /document/{job_id}/cancel`**: Cancel an ongoing processing job.
+- **`POST /document/{job_id}/retry-failed`**: Retry processing for failed pages.
+
+#### Progress & Status
+
+- **`GET /document/{job_id}/status`**: Get overall processing status and progress.
+
+#### Page Data
+
+- **`GET /document/{job_id}/pages`**: Get a paginated list of pages with their status.
+- **`GET /document/{job_id}/page/{page_number}`**: Get OCR data (text, layout) for a specific page.
+
+#### Export
+
+- **`GET /document/{job_id}/export?format={pdf|txt|json}`**: Export the processed document.
+
+## Legacy Single-File Endpoints
 
 ### `POST /upload`
 
@@ -95,6 +128,8 @@ Uploads a PDF page (as an image) or an image file for processing.
 - `engine/`: **Core OCR and Processing Engine**. Contains the logic for modifying files, running models, and extracting data. See [engine/README.md](engine/README.md) for detailed documentation.
 - `ocr_engine.py`: Wrapper entry point for the engine module.
 - `logger.py`: System logging manager.
+- `queue_manager.py`: Handles asynchronous job processing and workers.
+- `storage_manager.py`: Manages file storage organization.
 - `uploads/`: Directory where uploaded and processed files are stored.
 - `restora.db`: SQLite database file (generated on startup).
 

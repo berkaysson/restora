@@ -47,8 +47,10 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
     }
   };
 
-  const getFileName = (path: string) => {
-    return path.split("/").pop() || path;
+  const getFileName = (job: UploadJob) => {
+    return (
+      job.filename || job.original_file.split("/").pop() || job.original_file
+    );
   };
 
   if (!isOpen) return null;
@@ -86,14 +88,24 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
                       <FileText className="w-4 h-4 text-primary shrink-0" />
                       <span
                         className="text-sm font-medium truncate text-base-content"
-                        title={job.original_file}
+                        title={job.filename || job.original_file}
                       >
-                        {getFileName(job.original_file)}
+                        {getFileName(job)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-base-content/50">
                       <Calendar className="w-3 h-3" />
                       <span>{job.upload_date}</span>
+                      {job.total_pages && job.total_pages > 1 && (
+                        <span className="badge badge-xs badge-ghost ml-2">
+                          {job.total_pages} Sayfa
+                        </span>
+                      )}
+                      {job.type === "single_page" && (
+                        <span className="badge badge-xs badge-ghost ml-2">
+                          Tek Sayfa
+                        </span>
+                      )}
                     </div>
                   </div>
 

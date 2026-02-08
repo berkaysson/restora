@@ -15,6 +15,8 @@ from fastapi import APIRouter, UploadFile, File
 import shutil, os, time, uuid
 from logger import log_manager
 from app.utils import process_ocr_and_spellcheck
+from storage_manager import storage_manager
+import json
 
 router = APIRouter()
 
@@ -43,8 +45,9 @@ async def upload_pdf_page(file: UploadFile = File(...)) -> dict:
         >>> response = {"status": "success", "job_id": "abc-123", ...}
     """
     job_id = str(uuid.uuid4())
-    job_dir = f"uploads/{job_id}"
-    os.makedirs(job_dir, exist_ok=True)
+    # Use storage manager to create directory (consistency)
+    storage_manager.create_job_directory(job_id)
+    job_dir = storage_manager.get_job_directory(job_id)
 
     await log_manager.log(
         f"Starting upload for file: {file.filename} (Type: {file.content_type}, Job ID: {job_id})",
@@ -53,22 +56,36 @@ async def upload_pdf_page(file: UploadFile = File(...)) -> dict:
 
     # Check file size (approximate)
     file_size = 0
-    file_path = f"{job_dir}/{file.filename}"
+    file_path = job_dir / file.filename
 
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         file_size = os.path.getsize(file_path)
+
+        # Create and save metadata
+        metadata = {
+            "job_id": job_id,
+            "filename": file.filename,
+            "upload_date": time.time(),
+            "total_pages": 1,
+            "type": "single_page",
+            "status": "processing",
+        }
+        storage_manager.save_metadata(job_id, metadata)
+
         await log_manager.log(
-            f"File saved: {file_path} ({file_size / 1024:.2f} KB)", "backend"
+            f"File saved: {file_path} ({file_size / 1024:.2f} KB) with metadata",
+            "backend",
         )
     except Exception as e:
         await log_manager.log(f"Upload Error: Failed to save file: {e}", "backend")
         return {"status": "error", "message": f"Upload failed: {e}"}
 
     # İşleme Başla
-    return await process_ocr_and_spellcheck(file_path, job_id)
+    # Convert path to string for compatibility with existing utils
+    return await process_ocr_and_spellcheck(str(file_path), job_id)
 
 
 @router.get("/list-uploads")
@@ -84,6 +101,9 @@ async def list_uploads() -> dict:
             - upload_date: When the file was uploaded
             - original_file: Path to the original uploaded file
             - processed_files: List of generated files (clean images, JSON)
+            - filename: Original filename (from metadata)
+            - total_pages: Total number of pages
+            - type: Job type (single_page, multi_page)
     """
     uploads_dir = "uploads"
     if not os.path.exists(uploads_dir):
@@ -96,7 +116,9 @@ async def list_uploads() -> dict:
         for entry in entries:
             if entry.is_dir():
                 job_id = entry.name
-                job_path = entry.path
+
+                # Try to get metadata using storage manager
+                metadata = storage_manager.get_metadata(job_id)
 
                 # Default values
                 upload_date = time.strftime(
@@ -104,26 +126,65 @@ async def list_uploads() -> dict:
                 )
                 original_file = None
                 processed_files = []
+                filename = None
+                total_pages = 1
+                job_type = "single_page"
 
-                # Scan files inside the job directory
-                files_in_job = os.listdir(job_path)
-                for f in files_in_job:
-                    full_path = f"uploads/{job_id}/{f}"
-                    if "_clean" in f or f.endswith(".json"):
-                        processed_files.append(full_path)
-                    else:
-                        # Assume the file without _clean and not .json is the original
-                        original_file = full_path
+                # If metadata exists, use it
+                if metadata:
+                    if "filename" in metadata:
+                        filename = metadata["filename"]
+                    if "total_pages" in metadata:
+                        total_pages = metadata["total_pages"]
+                    if "type" in metadata:
+                        job_type = metadata["type"]
+                    elif total_pages > 1:
+                        job_type = "multi_page"
 
-                if original_file:
-                    jobs.append(
-                        {
-                            "id": job_id,
-                            "upload_date": upload_date,
-                            "original_file": original_file,
-                            "processed_files": processed_files,
-                        }
-                    )
+                    # Optionally use upload_date from metadata if stored as timestamp
+                    if "upload_date" in metadata:
+                        try:
+                            upload_date = time.strftime(
+                                "%Y-%m-%d %H:%M:%S",
+                                time.localtime(metadata["upload_date"]),
+                            )
+                        except:
+                            pass  # Keep fs time if conversion fails
+
+                # Scan files inside the job directory for legacy support/file listing
+                # (We still need processed_files list)
+                try:
+                    files_in_job = os.listdir(entry.path)
+                    for f in files_in_job:
+                        full_path = f"uploads/{job_id}/{f}"
+                        if "_clean" in f or f.endswith(".json") or f == "pages":
+                            processed_files.append(full_path)
+                        elif f != "metadata.json" and f != "original.pdf":
+                            # Legacy: Assume the file without _clean/json/pages/metadata is original
+                            original_file = full_path
+                except OSError:
+                    continue
+
+                # If we have metadata filename but no original_file detected (e.g. multi-page with original.pdf)
+                # Ensure we have a display name
+                if not filename and original_file:
+                    filename = os.path.basename(original_file)
+
+                # For multi-page, original_file might be internal "original.pdf",
+                # so we might want to expose the metadata filename as principal identifier
+
+                jobs.append(
+                    {
+                        "id": job_id,
+                        "upload_date": upload_date,
+                        "original_file": original_file
+                        or f"uploads/{job_id}/original.pdf",  # Fallback
+                        "filename": filename,
+                        "total_pages": total_pages,
+                        "type": job_type,
+                        "processed_files": processed_files,
+                    }
+                )
 
     # Sort by upload date desc
     jobs.sort(key=lambda x: x["upload_date"], reverse=True)

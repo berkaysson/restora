@@ -18,27 +18,82 @@ DB_NAME = "restora.db"
 def init_db() -> None:
     """Initialize the SQLite database with required tables.
 
-    Creates the 'books' and 'pages' tables if they don't exist.
-    Should be called once at application startup.
+    Creates tables for multi-page document processing with granular
+    page-level tracking. Maintains backward compatibility with legacy
+    'books' and 'pages' tables.
 
     Tables created:
-        - books: id (PK), title, status
-        - pages: id (PK), book_id (FK), page_num, image_path, raw_text, layout_json
+        - documents: Multi-page document metadata (job-level)
+        - processed_pages: Individual page processing status and data
+        - books: (Legacy) Book metadata
+        - pages: (Legacy) Page data
     """
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    # Kitaplar tablosu
+
+    # NEW: Documents table for multi-page PDFs
+    c.execute(
+        """CREATE TABLE IF NOT EXISTS documents (
+            id TEXT PRIMARY KEY,
+            filename TEXT NOT NULL,
+            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            total_pages INTEGER NOT NULL,
+            processed_pages INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'pending',
+            file_path TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )"""
+    )
+
+    # NEW: Processed pages table with detailed tracking
+    c.execute(
+        """CREATE TABLE IF NOT EXISTS processed_pages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id TEXT NOT NULL,
+            page_number INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            image_path TEXT,
+            ocr_text TEXT,
+            layout_json TEXT,
+            confidence_score REAL,
+            processing_time REAL,
+            error_message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE,
+            UNIQUE(document_id, page_number)
+        )"""
+    )
+
+    # Create indexes for efficient queries
+    c.execute(
+        """CREATE INDEX IF NOT EXISTS idx_pages_document 
+           ON processed_pages(document_id)"""
+    )
+    c.execute(
+        """CREATE INDEX IF NOT EXISTS idx_pages_status 
+           ON processed_pages(status)"""
+    )
+    c.execute(
+        """CREATE INDEX IF NOT EXISTS idx_documents_status 
+           ON documents(status)"""
+    )
+
+    # LEGACY: Books table (maintain backward compatibility)
     c.execute(
         """CREATE TABLE IF NOT EXISTS books 
                  (id INTEGER PRIMARY KEY, title TEXT, status TEXT)"""
     )
-    # Sayfalar tablosu
+
+    # LEGACY: Pages table (maintain backward compatibility)
     c.execute(
         """CREATE TABLE IF NOT EXISTS pages 
                  (id INTEGER PRIMARY KEY, book_id INTEGER, page_num INTEGER, 
                   image_path TEXT, raw_text TEXT, layout_json TEXT, 
                   FOREIGN KEY(book_id) REFERENCES books(id))"""
     )
+
     conn.commit()
     conn.close()
 

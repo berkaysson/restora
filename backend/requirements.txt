@@ -1,10 +1,8 @@
 fastapi
-uvicorn[standard]
-websockets
+uvicorn
 python-multipart
-surya-ocr>=0.6.0
 opencv-python
+pillow
 numpy
-Pillow
-pyspellchecker
+surya-ocr
 pypdfium2
