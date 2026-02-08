@@ -27,13 +27,15 @@
 - [ ] Create focus-mode editor in frontend to quickly clean OCR artifacts (page numbers, headers, noise) before read-aloud.
 - [ ] Highlight words with OCR confidence below 80% in yellow within editor to prioritize critical corrections.
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
+- [ ] We should store and save the deleted lines and sections.
+- [ ] Enable removing some sectionsfrom all pages.
 
 ## Export & Read-Aloud Features
 
 - [x] Export as searchable pdf
 - [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
 - [ ] Add semantic HTML/Markdown export with proper heading structure for browser read-aloud and reader view compatibility.
-- [ ] Export whole pdf with all pages.
+- [x] Export whole pdf with all pages.
 
 ## Testing & Documentation
 

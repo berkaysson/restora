@@ -8,6 +8,8 @@ import { useLayout } from "../context/LayoutContext";
 import { useAnalysis } from "../context/AnalysisContext";
 import { useFileProcessing } from "../hooks/useFileProcessing";
 import { usePdfExport } from "../hooks/usePdfExport";
+import { PdfExportDialog } from "./modals/PdfExportDialog";
+import { useState } from "react";
 
 export const MainLayout = () => {
   const {
@@ -28,6 +30,11 @@ export const MainLayout = () => {
   const { data, clearAnalysis } = useAnalysis();
   const { handleUpload, handleOpenFile } = useFileProcessing();
   const { handleExportPdf } = usePdfExport();
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+
+  const handleOpenExportDialog = () => {
+    setIsExportDialogOpen(true);
+  };
 
   return (
     <div className="flex flex-col h-screen font-sans text-base-content bg-base-100 selection:bg-primary/30">
@@ -85,8 +92,17 @@ export const MainLayout = () => {
         onOpenOverlay={() => setIsOverlayOpen(true)}
         showOverlayButton={!!data || loading}
         showExportButton={!!data && !loading}
-        onExportPdf={handleExportPdf}
+        onExportPdf={handleOpenExportDialog}
       />
+
+      {data && isExportDialogOpen && (
+        <PdfExportDialog
+          isOpen={isExportDialogOpen}
+          onClose={() => setIsExportDialogOpen(false)}
+          onExport={handleExportPdf}
+          totalPages={totalPages}
+        />
+      )}
     </div>
   );
 };
