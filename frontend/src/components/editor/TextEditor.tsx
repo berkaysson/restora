@@ -39,6 +39,9 @@ export const TextEditor: React.FC = () => {
     deleteTextLine,
     selectedIndex,
     setSelectedIndex,
+    globalHiddenLabels,
+    toggleGlobalLabel,
+    allLabels,
   } = useAnalysis();
   const { fontSize } = useEditor();
   const [editText, setEditText] = useState("");
@@ -124,8 +127,11 @@ export const TextEditor: React.FC = () => {
   // Filter hidden lines helper
   const isLineHidden = useCallback(
     (line: TextLine) =>
-      line.layout_labels?.some((lbl: string) => hiddenLabels.includes(lbl)),
-    [hiddenLabels],
+      line.layout_labels?.some(
+        (lbl: string) =>
+          hiddenLabels.includes(lbl) || globalHiddenLabels.includes(lbl),
+      ),
+    [hiddenLabels, globalHiddenLabels],
   );
 
   // Empty state
@@ -149,6 +155,9 @@ export const TextEditor: React.FC = () => {
         availableLabels={availableLabels}
         hiddenLabels={hiddenLabels}
         onToggleLabel={toggleLabel}
+        allLabels={allLabels}
+        globalHiddenLabels={globalHiddenLabels}
+        onToggleGlobalLabel={toggleGlobalLabel}
       />
 
       <div

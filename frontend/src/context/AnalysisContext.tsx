@@ -15,6 +15,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { TextLine } from "../types";
 import type { PageData } from "../types";
 
 /**
@@ -53,6 +54,12 @@ interface AnalysisContextType {
   selectedIndex: number | null;
   /** Set the selected line index */
   setSelectedIndex: (index: number | null) => void;
+  /** Layout labels hidden globally across all pages */
+  globalHiddenLabels: string[];
+  /** Toggle global visibility of a specific layout label */
+  toggleGlobalLabel: (label: string) => void;
+  /** All unique labels across all pages */
+  allLabels: string[];
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -81,12 +88,30 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [globalHiddenLabels, setGlobalHiddenLabels] = useState<string[]>([]);
 
   const toggleLabel = useCallback((label: string) => {
     setHiddenLabels((prev) =>
       prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
     );
   }, []);
+
+  const toggleGlobalLabel = useCallback((label: string) => {
+    setGlobalHiddenLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  }, []);
+
+  // Compute all unique labels across all pages
+  const allLabels = useMemo(() => {
+    const labels = new Set<string>();
+    allPages.forEach((page) => {
+      page.layout?.text_lines?.forEach((line: TextLine) => {
+        line.layout_labels?.forEach((lbl: string) => labels.add(lbl));
+      });
+    });
+    return Array.from(labels).sort();
+  }, [allPages]);
 
   const clearAnalysis = useCallback(() => {
     setData(null);
@@ -95,6 +120,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setEditingIndex(null);
     setAllPages([]);
     setSelectedIndex(null);
+    setGlobalHiddenLabels([]);
   }, []);
 
   const updateTextLine = useCallback((index: number, newText: string) => {
@@ -152,6 +178,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setAllPages,
       selectedIndex,
       setSelectedIndex,
+      globalHiddenLabels,
+      toggleGlobalLabel,
+      allLabels,
     }),
     [
       data,
@@ -164,6 +193,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       deleteTextLine,
       allPages,
       selectedIndex,
+      globalHiddenLabels,
+      toggleGlobalLabel,
+      allLabels,
     ],
   );
 

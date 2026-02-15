@@ -1,6 +1,7 @@
 import React from "react";
 import { ZoomController } from "../../common/ZoomController";
 import { PageNavigator } from "../../common/PageNavigator";
+import { Layers, FileText } from "lucide-react";
 
 interface EditorHeaderProps {
   lineCount: number;
@@ -16,6 +17,9 @@ interface EditorHeaderProps {
   availableLabels: string[];
   hiddenLabels: string[];
   onToggleLabel: (label: string) => void;
+  allLabels: string[];
+  globalHiddenLabels: string[];
+  onToggleGlobalLabel: (label: string) => void;
 }
 
 /**
@@ -35,6 +39,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   availableLabels,
   hiddenLabels,
   onToggleLabel,
+  allLabels,
+  globalHiddenLabels,
+  onToggleGlobalLabel,
 }) => {
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-3 p-3 border-b shadow-sm border-base-content/5 bg-base-100">
@@ -61,8 +68,48 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         </div>
       </div>
 
+      {/* Global section toggle — all pages */}
+      {allLabels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/60 border border-base-content/5">
+          <div className="flex items-center gap-1 mr-1">
+            <Layers size={12} className="text-secondary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-secondary">
+              Tüm Sayfalar
+            </span>
+          </div>
+          {allLabels.map((label) => {
+            const isHidden = globalHiddenLabels.includes(label);
+            return (
+              <button
+                key={`global-${label}`}
+                onClick={() => onToggleGlobalLabel(label)}
+                className={`btn btn-xs normal-case ${
+                  isHidden
+                    ? "btn-ghost text-base-content/40 line-through bg-base-300 border-base-content/10"
+                    : "btn-secondary text-secondary-content border-0"
+                }`}
+                title={
+                  isHidden
+                    ? `Tüm sayfalarda göster: ${label}`
+                    : `Tüm sayfalarda gizle: ${label}`
+                }
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Per-page section toggle */}
       {availableLabels.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/40 border border-base-content/5">
+          <div className="flex items-center gap-1 mr-1">
+            <FileText size={12} className="text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+              Bu Sayfa
+            </span>
+          </div>{" "}
           {availableLabels.map((label) => {
             const isHidden = hiddenLabels.includes(label);
             return (
@@ -71,10 +118,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
                 onClick={() => onToggleLabel(label)}
                 className={`btn btn-xs normal-case border-0 ${
                   isHidden
-                    ? "btn-ghost text-base-content/40 decoration-line-through bg-base-300"
+                    ? "btn-ghost text-base-content/40 line-through bg-base-300"
                     : "btn-primary text-primary-content"
                 }`}
-                title={isHidden ? "Show" : "Hide"}
+                title={isHidden ? "Göster" : "Gizle"}
               >
                 {label}
               </button>
