@@ -72,8 +72,12 @@ export const ImagePreview: React.FC = () => {
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        if (e.deltaY < 0) handleZoomIn();
-        else handleZoomOut();
+        const wheelStep = 0.05;
+        if (e.deltaY < 0) {
+          setZoom((prev) => Math.min(5, prev + wheelStep));
+        } else {
+          setZoom((prev) => Math.max(0.1, prev - wheelStep));
+        }
       }
     };
 

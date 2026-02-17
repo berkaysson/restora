@@ -57,8 +57,12 @@ export const useZoom = (
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        if (e.deltaY < 0) handleZoomIn();
-        else handleZoomOut();
+        const wheelStep = 0.05;
+        if (e.deltaY < 0) {
+          setZoom((prev) => Math.min(maxZoom, prev + wheelStep));
+        } else {
+          setZoom((prev) => Math.max(minZoom, prev - wheelStep));
+        }
       }
     };
 

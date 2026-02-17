@@ -9,6 +9,7 @@ import { useAnalysis } from "../context/AnalysisContext";
 import { useFileProcessing } from "../hooks/useFileProcessing";
 import { usePdfExport } from "../hooks/usePdfExport";
 import { PdfExportDialog } from "./modals/PdfExportDialog";
+import { PanelTopOpen, PanelTopClose } from "lucide-react";
 import { useState } from "react";
 
 export const MainLayout = () => {
@@ -25,6 +26,8 @@ export const MainLayout = () => {
     totalPages,
     containerRef,
     startResizing,
+    isHeaderCompact,
+    setIsHeaderCompact,
   } = useLayout();
 
   const { data, clearAnalysis } = useAnalysis();
@@ -51,6 +54,25 @@ export const MainLayout = () => {
         onUpload={handleUpload}
         onClear={clearAnalysis}
       />
+
+      {isHeaderCompact ? (
+        <button
+          onClick={() => setIsHeaderCompact(false)}
+          className="fixed top-2 left-2 z-60 btn btn-sm btn-circle btn-primary shadow-lg hover:scale-110 transition-all duration-200"
+          title="Başlığı Göster"
+        >
+          <PanelTopOpen className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsHeaderCompact(true)}
+          className="fixed top-2 left-2 z-60 btn btn-sm btn-circle btn-ghost text-base-content/60 hover:text-base-content hover:bg-base-content/10"
+          title="Başlığı Gizle"
+          aria-label="Toggle Compact Mode"
+        >
+          <PanelTopClose className="w-4 h-4" />
+        </button>
+      )}
 
       <div className="relative flex flex-1 overflow-hidden" ref={containerRef}>
         <LoadingOverlay

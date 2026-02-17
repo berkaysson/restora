@@ -19,7 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onUpload,
   onClear,
 }) => {
-  const { setCurrentPage } = useLayout();
+  const { setCurrentPage, isHeaderCompact } = useLayout();
   const { setSelectedIndex } = useAnalysis();
 
   const handleClear = () => {
@@ -42,8 +42,16 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b shadow-sm backdrop-blur-md bg-base-100/80 border-base-content/10 supports-backdrop-filter:bg-base-100/60">
-      <div className="container flex items-center justify-between h-16 px-4 mx-auto max-w-7xl md:px-6">
+    <header
+      className={`sticky top-0 z-50 w-full border-b shadow-sm backdrop-blur-md bg-base-100/80 border-base-content/10 transition-all duration-300 ease-in-out ${
+        isHeaderCompact ? "h-0 border-none overflow-hidden" : "h-16"
+      }`}
+    >
+      <div
+        className={`container flex items-center justify-between h-full px-4 mx-auto max-w-7xl md:px-6 transition-opacity duration-200 ${
+          isHeaderCompact ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      >
         {/* Logo Section */}
         <div className="flex items-center gap-3 cursor-default select-none group">
           <div className="flex items-center justify-center p-2 transition-colors rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20">
@@ -105,19 +113,21 @@ export const Header: React.FC<HeaderProps> = ({
             </label>
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="btn btn-sm btn-circle btn-ghost text-base-content/60 hover:text-base-content hover:bg-base-content/10"
-            title={`Switch to ${theme === "nord" ? "Dark" : "Light"} Mode`}
-            aria-label="Toggle Theme"
-          >
-            {theme === "nord" ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="btn btn-sm btn-circle btn-ghost text-base-content/60 hover:text-base-content hover:bg-base-content/10"
+              title={`Switch to ${theme === "nord" ? "Dark" : "Light"} Mode`}
+              aria-label="Toggle Theme"
+            >
+              {theme === "nord" ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
+            </button>
+          </div>
 
           {/* Mobile Clear Button (only shown on small screens if data exists) */}
           {data && (

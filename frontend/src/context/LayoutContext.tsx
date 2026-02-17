@@ -61,6 +61,10 @@ interface LayoutContextType {
   currentPage: number;
   /** Set current page number */
   setCurrentPage: (page: number) => void;
+  /** Whether the header is in compact mode */
+  isHeaderCompact: boolean;
+  /** Toggle header compact mode */
+  setIsHeaderCompact: (compact: boolean) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -85,6 +89,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [processedPages, setProcessedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
@@ -141,6 +146,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       setTotalPages,
       currentPage,
       setCurrentPage,
+      isHeaderCompact,
+      setIsHeaderCompact,
     }),
     [
       leftPanelWidth,
@@ -152,6 +159,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       processedPages,
       totalPages,
       currentPage,
+      isHeaderCompact,
     ],
   );
 
