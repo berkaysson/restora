@@ -28,12 +28,12 @@
 - [ ] Highlight words with OCR confidence below 80% in yellow within editor to prioritize critical corrections.
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
-- [x] Enable removing some sections from all pages.
+- [ ] Enable removing some sections from all pages. It should export with that
 
 ## Export & Read-Aloud Features
 
 - [x] Export as searchable pdf
-- [ ] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
+- [x] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
 - [ ] Add semantic HTML/Markdown export with proper heading structure for browser read-aloud and reader view compatibility.
 - [x] Export whole pdf with all pages.
 

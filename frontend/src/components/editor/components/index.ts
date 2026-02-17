@@ -4,3 +4,4 @@ export { TextLineEdit } from "./TextLineEdit";
 export { TextLineActions } from "./TextLineActions";
 export { PositionedTextLine } from "./PositionedTextLine";
 export { ListTextLine } from "./ListTextLine";
+export { SectionView } from "./SectionView";

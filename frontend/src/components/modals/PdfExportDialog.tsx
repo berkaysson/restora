@@ -5,7 +5,11 @@ import { DualRangeSlider } from "../ui/DualRangeSlider";
 interface PdfExportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (startPage: number, endPage: number) => Promise<void>;
+  onExport: (
+    startPage: number,
+    endPage: number,
+    useBlocks: boolean,
+  ) => Promise<void>;
   totalPages: number;
 }
 
@@ -18,6 +22,7 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
   const [range, setRange] = useState<[number, number]>([1, totalPages]);
   const [startInput, setStartInput] = useState<string>("1");
   const [endInput, setEndInput] = useState<string>(totalPages.toString());
+  const [useBlocks, setUseBlocks] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   // State initializes on mount when dialog opens (controlled by key or conditional rendering in parent)
@@ -60,14 +65,14 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
 
   const handleExport = async () => {
     setIsLoading(true);
-    await onExport(range[0], range[1]);
+    await onExport(range[0], range[1], useBlocks);
     setIsLoading(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md p-6 bg-base-100 rounded-xl shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="relative w-11/12 max-w-md modal-box">
         <button
           onClick={onClose}
           disabled={isLoading}
@@ -76,7 +81,7 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
           <X className="w-4 h-4" />
         </button>
 
-        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+        <h3 className="flex items-center gap-2 mb-6 text-lg font-bold">
           <Download className="w-5 h-5 text-primary" />
           PDF Olarak İndir
         </h3>
@@ -98,7 +103,7 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
           </div>
 
           <div className="flex gap-4">
-            <div className="form-control w-full">
+            <div className="w-full form-control">
               <label className="label">
                 <span className="label-text">Başlangıç Sayfası</span>
               </label>
@@ -110,11 +115,11 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
                 onChange={(e) => setStartInput(e.target.value)}
                 onBlur={handleStartBlur}
                 onKeyDown={(e) => handleKeyDown(e, handleStartBlur)}
-                className="input input-bordered w-full"
+                className="w-full input input-bordered"
                 disabled={isLoading}
               />
             </div>
-            <div className="form-control w-full">
+            <div className="w-full form-control">
               <label className="label">
                 <span className="label-text">Bitiş Sayfası</span>
               </label>
@@ -126,10 +131,30 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
                 onChange={(e) => setEndInput(e.target.value)}
                 onBlur={handleEndBlur}
                 onKeyDown={(e) => handleKeyDown(e, handleEndBlur)}
-                className="input input-bordered w-full"
+                className="w-full input input-bordered"
                 disabled={isLoading}
               />
             </div>
+          </div>
+
+          {/* Options Section */}
+          <div className="pt-2 border-t border-base-content/10">
+            <label className="flex items-center gap-3 pr-4 cursor-pointer label">
+              <span className="flex-1 label-text">
+                <span className="block font-medium">Akıllı Paragraf Modu</span>
+              </span>
+              <input
+                type="checkbox"
+                className="toggle toggle-primary toggle-sm"
+                checked={useBlocks}
+                onChange={(e) => setUseBlocks(e.target.checked)}
+                disabled={isLoading}
+              />
+            </label>
+            <span className="block text-xs text-base-content/60 mt-0.5">
+              Metinleri paragraf blokları halinde dışa aktarır (Sesli okuma için
+              önerilir).
+            </span>
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
@@ -157,6 +182,9 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
           </div>
         </div>
       </div>
+      <form method="dialog" className="modal-backdrop">
+        <button onClick={onClose}>close</button>
+      </form>
     </div>
   );
 };

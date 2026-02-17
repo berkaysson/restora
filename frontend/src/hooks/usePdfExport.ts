@@ -10,7 +10,7 @@
 import { useCallback, useState } from "react";
 import { jsPDF } from "jspdf";
 import { useAnalysis } from "../context/AnalysisContext";
-import type { PageData } from "../types";
+import type { PageData, Block, TextLine } from "../types";
 import RobotoRegular from "../assets/Roboto-Regular.ttf";
 
 /**
@@ -43,7 +43,7 @@ export function usePdfExport() {
    * Uses the clean image dimensions to match the source document layout.
    */
   const handleExportPdf = useCallback(
-    async (startPage?: number, endPage?: number) => {
+    async (startPage?: number, endPage?: number, useBlocks: boolean = true) => {
       // Determine pages to export
       let pagesToExport: PageData[] = [];
 
@@ -122,7 +122,42 @@ export function usePdfExport() {
           );
           doc.setFont("Roboto", "normal");
 
-          if (pageData.layout?.text_lines) {
+          // Use blocks if available (better for read-aloud)
+          if (
+            useBlocks &&
+            pageData.layout?.blocks &&
+            pageData.layout.blocks.length > 0
+          ) {
+            pageData.layout.blocks.forEach((block: Block) => {
+              const { bbox, text, line_indices } = block;
+              if (!bbox) return;
+
+              const x = bbox[0];
+              const y = bbox[1];
+              const width = bbox[2] - bbox[0];
+
+              // Calculate average line height for font size
+              let avgHeight = 12; // Default
+              if (line_indices && pageData.layout.text_lines) {
+                const lines = line_indices
+                  .map((idx: number) => pageData.layout.text_lines[idx])
+                  .filter(Boolean);
+                if (lines.length > 0) {
+                  const totalHeight = lines.reduce(
+                    (sum: number, l: TextLine) => sum + (l.bbox[3] - l.bbox[1]),
+                    0,
+                  );
+                  avgHeight = totalHeight / lines.length;
+                }
+              }
+
+              doc.setFontSize(avgHeight);
+              doc.text(text, x, y + avgHeight * 0.75, {
+                maxWidth: width,
+              });
+            });
+          } else if (pageData.layout?.text_lines) {
+            // Fallback to individual lines
             pageData.layout.text_lines.forEach(
               (line: { bbox: number[]; text: string }) => {
                 const { bbox, text } = line;

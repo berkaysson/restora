@@ -62,6 +62,26 @@ export interface TextLine {
 }
 
 /**
+ * Represents a semantic block of text, grouping multiple lines.
+ */
+export interface Block {
+  /** The consolidated text content of the block */
+  text: string;
+
+  /** Confidence score (0-1) for the block */
+  confidence: number;
+
+  /** Bounding box coordinates [x1, y1, x2, y2] in pixels */
+  bbox: number[];
+
+  /** Semantic label for the block (e.g., "Header", "Text") */
+  layout_label: string;
+
+  /** Indices of the text lines that make up this block */
+  line_indices: number[];
+}
+
+/**
  * Represents a semantic region in the document layout.
  * Used for identifying headers, tables, figures, etc.
  */
@@ -79,7 +99,7 @@ export interface LayoutBlock {
   bbox: number[];
 
   /** Polygon vertices defining the block boundary */
-  polygon: number[][];
+  polygon?: number[][];
 }
 
 /**
@@ -91,13 +111,16 @@ export interface Layout {
   text_lines: TextLine[];
 
   /** Semantic layout blocks (headers, tables, etc.) */
-  layout_blocks?: LayoutBlock[];
+  layout_blocks: LayoutBlock[];
+
+  /** New field */
+  blocks?: Block[];
 
   /** Original image width in pixels */
-  width?: number;
+  width: number;
 
   /** Original image height in pixels */
-  height?: number;
+  height: number;
 }
 
 /**

@@ -121,15 +121,19 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                     }
                     text_lines.append(line_data)
 
+    # Group text lines into blocks
+            blocks = _group_lines_into_blocks(text_lines, layout_blocks)
+
             layout_json = {
                 "text_lines": text_lines,
                 "layout_blocks": layout_blocks,
+                "blocks": blocks,
                 "width": pil_img.width,
                 "height": pil_img.height,
             }
 
             await log_manager.log(
-                f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters and {len(text_lines)} lines.",
+                f"OCR Engine: Surya OCR completed successfully. Extracted {len(full_text)} characters, {len(text_lines)} lines, and {len(blocks)} blocks.",
                 "backend",
             )
         except Exception as e:
@@ -139,6 +143,108 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
         error_msg = "OCR Modelleri Yüklü Değil (surya-ocr kütüphanesini güncelleyin)."
         await log_manager.log(f"OCR Engine Error: {error_msg}", "backend")
         full_text = error_msg
-        layout_json = {"text_lines": [], "image_bbox": [0, 0, 0, 0]}
+        layout_json = {"text_lines": [], "image_bbox": [0, 0, 0, 0], "blocks": []}
 
     return full_text, layout_json
+
+
+def _group_lines_into_blocks(text_lines: list, layout_blocks: list) -> list:
+    """Group text lines into semantic blocks based on layout regions and proximity."""
+    blocks = []
+    
+    # 1. Group by Layout Blocks
+    # Create a mapping of layout block index to text lines
+    block_map = {i: [] for i in range(len(layout_blocks))}
+    ungrouped_lines = []
+
+    for line in text_lines:
+        # Check if line's center is inside any layout block
+        assigned = False
+        cx = (line["bbox"][0] + line["bbox"][2]) / 2
+        cy = (line["bbox"][1] + line["bbox"][3]) / 2
+
+        for i, lb in enumerate(layout_blocks):
+            l_bbox = lb["bbox"]
+            if (
+                l_bbox[0] <= cx <= l_bbox[2]
+                and l_bbox[1] <= cy <= l_bbox[3]
+            ):
+                block_map[i].append(line)
+                assigned = True
+                break  # Assign to first matching block (usually sufficient)
+        
+        if not assigned:
+            ungrouped_lines.append(line)
+
+    # 2. Process Layout Groups
+    for i, lines in block_map.items():
+        if not lines:
+            continue
+            
+        # Sort lines vertically
+        lines.sort(key=lambda x: x["bbox"][1])
+        
+        # Merge text
+        full_text = " ".join([l["text"] for l in lines])
+        
+        # Calculate union bbox
+        x1 = min(l["bbox"][0] for l in lines)
+        y1 = min(l["bbox"][1] for l in lines)
+        x2 = max(l["bbox"][2] for l in lines)
+        y2 = max(l["bbox"][3] for l in lines)
+        
+        blocks.append({
+            "text": full_text,
+            "bbox": [x1, y1, x2, y2],
+            "confidence": sum(l["confidence"] for l in lines) / len(lines),
+            "layout_label": layout_blocks[i]["label"],
+            "line_indices": [text_lines.index(l) for l in lines] # Keep track of source lines
+        })
+
+    # 3. Process Ungrouped Lines (Simple vertical proximity clustering)
+    if ungrouped_lines:
+        ungrouped_lines.sort(key=lambda x: x["bbox"][1])
+        current_cluster = [ungrouped_lines[0]]
+        
+        for line in ungrouped_lines[1:]:
+            prev_line = current_cluster[-1]
+            
+            # Simple heuristic: if vertical distance is small relative to line height
+            line_height = line["bbox"][3] - line["bbox"][1]
+            prev_height = prev_line["bbox"][3] - prev_line["bbox"][1]
+            avg_height = (line_height + prev_height) / 2
+            
+            vertical_gap = line["bbox"][1] - prev_line["bbox"][3]
+            
+            # If gap is less than 1.5x line height and horizontal overlap exists
+            if vertical_gap < avg_height * 1.5:
+                 current_cluster.append(line)
+            else:
+                # Close current cluster and start new one
+                _create_block_from_cluster(blocks, current_cluster, text_lines)
+                current_cluster = [line]
+        
+        # Close last cluster
+        if current_cluster:
+            _create_block_from_cluster(blocks, current_cluster, text_lines)
+
+    return blocks
+
+def _create_block_from_cluster(blocks, cluster, all_lines):
+    if not cluster:
+        return
+
+    full_text = " ".join([l["text"] for l in cluster])
+    
+    x1 = min(l["bbox"][0] for l in cluster)
+    y1 = min(l["bbox"][1] for l in cluster)
+    x2 = max(l["bbox"][2] for l in cluster)
+    y2 = max(l["bbox"][3] for l in cluster)
+    
+    blocks.append({
+        "text": full_text,
+        "bbox": [x1, y1, x2, y2],
+        "confidence": sum(l["confidence"] for l in cluster) / len(cluster),
+        "layout_label": "Text", # Default for ungrouped
+        "line_indices": [all_lines.index(l) for l in cluster]
+    })
