@@ -123,6 +123,7 @@ export function useFileProcessing() {
               text: firstPage.text,
               layout: firstPage.layout,
               typos: [],
+              page_number: firstPage.page_number,
             });
           }
         }
@@ -154,7 +155,6 @@ export function useFileProcessing() {
     if (currentPage > 0 && allPages.length > 0) {
       const pageData = allPages.find((p) => p.page_number === currentPage);
       if (pageData) {
-        setHiddenLabels([]);
         setSelectedIndex(null);
         setData({
           status: "success",
@@ -163,6 +163,7 @@ export function useFileProcessing() {
           text: pageData.text,
           layout: pageData.layout,
           typos: [],
+          page_number: pageData.page_number,
         });
       }
     }

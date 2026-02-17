@@ -95,7 +95,6 @@ const AnalysisContext = createContext<AnalysisContextType | undefined>(
 export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageData | null>(null);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
   const [originalPages, setOriginalPages] = useState<PageData[]>([]);
@@ -105,33 +104,65 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [globalHiddenLabels, setGlobalHiddenLabels] = useState<string[]>([]);
 
-  const pageNumber = data?.page_number;
+  const pageNumber = data?.page_number ?? (data ? 1 : undefined);
+
+  // Derive hiddenLabels for the current page
+  const hiddenLabels = useMemo(() => {
+    if (pageNumber === undefined) return [];
+    return pageHiddenLabels[pageNumber] || [];
+  }, [pageNumber, pageHiddenLabels]);
 
   const toggleLabel = useCallback(
     (label: string) => {
-      let newLabels: string[] = [];
-      setHiddenLabels((prev) => {
-        newLabels = prev.includes(label)
-          ? prev.filter((l) => l !== label)
-          : [...prev, label];
-
-        if (pageNumber) {
-          setPageHiddenLabelsState((prevPhl) => ({
-            ...prevPhl,
-            [pageNumber]: newLabels,
-          }));
-        }
-        return newLabels;
+      if (pageNumber === undefined) return;
+      setPageHiddenLabelsState((prev) => {
+        const currentLabels = prev[pageNumber] || [];
+        const newLabels = currentLabels.includes(label)
+          ? currentLabels.filter((l: string) => l !== label)
+          : [...currentLabels, label];
+        return { ...prev, [pageNumber]: newLabels };
       });
     },
     [pageNumber],
   );
 
-  const toggleGlobalLabel = useCallback((label: string) => {
-    setGlobalHiddenLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
-    );
-  }, []);
+  const toggleGlobalLabel = useCallback(
+    (label: string) => {
+      setGlobalHiddenLabels((prev) => {
+        const isCurrentlyHidden = prev.includes(label);
+        const nextGlobalHidden = isCurrentlyHidden
+          ? prev.filter((l: string) => l !== label)
+          : [...prev, label];
+
+        // Propagate to all pages
+        setPageHiddenLabelsState((prevPhl) => {
+          const nextPhl = { ...prevPhl };
+          allPages.forEach((page) => {
+            const pageNum = page.page_number;
+            if (pageNum === undefined) return;
+            const currentLabels = prevPhl[pageNum] || [];
+            if (!isCurrentlyHidden) {
+              // Hiding globally -> Hide on all pages
+              if (!currentLabels.includes(label)) {
+                nextPhl[pageNum] = [...currentLabels, label];
+              }
+            } else {
+              // Showing globally -> Show on all pages
+              if (currentLabels.includes(label)) {
+                nextPhl[pageNum] = currentLabels.filter(
+                  (l: string) => l !== label,
+                );
+              }
+            }
+          });
+          return nextPhl;
+        });
+
+        return nextGlobalHidden;
+      });
+    },
+    [allPages],
+  );
 
   // Compute all unique labels across all pages
   const allLabels = useMemo(() => {
@@ -149,7 +180,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const clearAnalysis = useCallback(() => {
     setData(null);
     setHighlightIndex(null);
-    setHiddenLabels([]);
     setEditingIndex(null);
     setAllPages([]);
     setOriginalPages([]);
@@ -234,7 +264,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       highlightIndex,
       setHighlightIndex,
       hiddenLabels,
-      setHiddenLabels,
+      setHiddenLabels: (labels: string[]) => {
+        if (pageNumber !== undefined) {
+          setPageHiddenLabelsState((prev) => ({
+            ...prev,
+            [pageNumber]: labels,
+          }));
+        }
+      },
       toggleLabel,
       clearAnalysis,
       editingIndex,
@@ -270,6 +307,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       originalPages,
       pageHiddenLabels,
       setPageHiddenLabels,
+      pageNumber,
     ],
   );
 

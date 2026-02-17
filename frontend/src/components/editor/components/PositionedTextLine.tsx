@@ -112,7 +112,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
           <div
             className={`absolute left-0 px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 bg-neutral text-neutral-content whitespace-nowrap z-100 ${isActive ? "block" : "hidden group-hover:block"}`}
           >
-            {line.text} ({line.layout_labels?.join(", ") || "No Label"})
+            ({line.layout_labels?.join(", ") || "No Label"})
           </div>
         </>
       )}

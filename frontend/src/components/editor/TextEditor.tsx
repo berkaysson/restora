@@ -127,11 +127,8 @@ export const TextEditor: React.FC = () => {
   // Filter hidden lines helper
   const isLineHidden = useCallback(
     (line: TextLine) =>
-      line.layout_labels?.some(
-        (lbl: string) =>
-          hiddenLabels.includes(lbl) || globalHiddenLabels.includes(lbl),
-      ),
-    [hiddenLabels, globalHiddenLabels],
+      line.layout_labels?.some((lbl: string) => hiddenLabels.includes(lbl)),
+    [hiddenLabels],
   );
 
   // Empty state
