@@ -21,6 +21,7 @@ interface PositionedTextLineProps {
   onCancel: () => void;
   onStartEdit: () => void;
   onDelete: () => void;
+  medianLineHeight: number;
 }
 
 /**
@@ -45,6 +46,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   onCancel,
   onStartEdit,
   onDelete,
+  medianLineHeight,
 }) => {
   const [x1, y1, x2, y2] = line.bbox;
   const w = x2 - x1;
@@ -54,6 +56,21 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   const top = (y1 / documentHeight) * 100;
   const wPct = (w / documentWidth) * 100;
   const hPct = (h / documentHeight) * 100;
+
+  // Font Normalization Logic
+  // Calculate if the current line height is roughly equal to the median line height (likely body text)
+  // If so, use the median height to avoid "x-height" lines appearing tiny.
+  // We use a 25% tolerance to catch lines that are slightly taller/shorter but clearly part of the body.
+  const isBodyText =
+    medianLineHeight > 0 &&
+    Math.abs(h - medianLineHeight) / medianLineHeight < 0.25;
+
+  const effectiveH = isBodyText ? medianLineHeight : h;
+
+  // Scale factor to adjust visually (0.85 fits Times New Roman well within bbox)
+  const scaleFactor = 0.85;
+  const fontSize =
+    (effectiveH / documentHeight) * (1000 / aspectRatio) * scaleFactor;
 
   // Determine visual state classes
   const isActive = isHighlighted || isSelected;
@@ -69,13 +86,13 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
     <div
       key={idx}
       data-text-line
-      className={`absolute flex items-center hover:z-50 group border border-transparent hover:border-primary/50 rounded transition-colors cursor-pointer ${stateClasses}`}
+      className={`absolute flex items-center hover:z-50 group hover:ring-1 hover:ring-primary/50 rounded transition-colors cursor-pointer ${stateClasses}`}
       style={{
         left: `${left}%`,
         top: `${top}%`,
         width: `${wPct}%`,
         height: `${hPct}%`,
-        fontSize: `${(h / documentHeight) * (1000 / aspectRatio)}px`,
+        fontSize: `${fontSize}px`,
         lineHeight: 1,
         whiteSpace: "nowrap",
       }}
@@ -97,9 +114,12 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
       ) : (
         <>
           <span
-            className="block w-full h-full px-px"
+            className="block w-full h-full px-px font-serif leading-none"
             style={{
-              fontSize: "clamp(6px, 100%, 48px)",
+              textAlign: "justify",
+              textAlignLast: "justify",
+              width: "100%",
+              display: "block",
             }}
           >
             {line.text}

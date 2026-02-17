@@ -77,6 +77,22 @@ export const TextEditor: React.FC = () => {
     return Array.from(labels).sort();
   }, [data]);
 
+  // Calculate median line height for font normalization
+  const medianLineHeight = useMemo(() => {
+    if (!data?.layout?.text_lines || data.layout.text_lines.length === 0)
+      return 0;
+    const heights = data.layout.text_lines
+      .map((line) => {
+        const [, y1, , y2] = line.bbox;
+        return y2 - y1;
+      })
+      .sort((a, b) => a - b);
+    const mid = Math.floor(heights.length / 2);
+    return heights.length % 2 !== 0
+      ? heights[mid]
+      : (heights[mid - 1] + heights[mid]) / 2;
+  }, [data]);
+
   // Fit to page handler
   const handleFitToPage = useCallback(() => {
     if (!scrollContainerRef.current || !hasDimensions || !aspectRatio) return;
@@ -197,6 +213,7 @@ export const TextEditor: React.FC = () => {
             onSaveEdit={saveEdit}
             onCancelEdit={cancelEdit}
             onDeleteLine={deleteTextLine}
+            medianLineHeight={medianLineHeight}
           />
         ) : (
           <ListView
@@ -243,6 +260,7 @@ interface PositionedViewProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onDeleteLine: (idx: number) => void;
+  medianLineHeight: number;
 }
 
 /**
@@ -266,6 +284,7 @@ const PositionedView: React.FC<PositionedViewProps> = ({
   onSaveEdit,
   onCancelEdit,
   onDeleteLine,
+  medianLineHeight,
 }) => (
   <div
     className="mx-auto transition-all origin-top"
@@ -305,6 +324,7 @@ const PositionedView: React.FC<PositionedViewProps> = ({
             onCancel={onCancelEdit}
             onStartEdit={() => onStartEditing(idx, line.text)}
             onDelete={() => onDeleteLine(idx)}
+            medianLineHeight={medianLineHeight}
           />
         );
       })}
