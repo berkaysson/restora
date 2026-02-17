@@ -15,6 +15,7 @@
 - [x] Store extracted text data in uploads folder as json
 - [x] Process each pages and store in database
 - [ ] Add "cleaned_text" column in restora.db to store post-processed text separately while preserving original OCR output.
+- [ ] Before uploading document lets open a modal to range between pages, to work with selected pages.
 
 ## Frontend & UI
 
@@ -28,7 +29,7 @@
 - [ ] Highlight words with OCR confidence below 80% in yellow within editor to prioritize critical corrections.
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
-- [ ] Enable removing some sections from all pages. It should export with that
+- [x] Enable removing some sections from all pages. It should export with that
 
 ## Export & Read-Aloud Features
 

@@ -35,7 +35,13 @@ import RobotoRegular from "../assets/Roboto-Regular.ttf";
  * ```
  */
 export function usePdfExport() {
-  const { data, allPages } = useAnalysis();
+  const {
+    data,
+    allPages,
+    originalPages,
+    globalHiddenLabels,
+    pageHiddenLabels,
+  } = useAnalysis();
   const [isExporting, setIsExporting] = useState(false);
 
   /**
@@ -43,25 +49,35 @@ export function usePdfExport() {
    * Uses the clean image dimensions to match the source document layout.
    */
   const handleExportPdf = useCallback(
-    async (startPage?: number, endPage?: number, useBlocks: boolean = true) => {
+    async (
+      startPage?: number,
+      endPage?: number,
+      useBlocks: boolean = true,
+      includeChanges: boolean = true,
+    ) => {
       // Determine pages to export
       let pagesToExport: PageData[] = [];
 
       setIsExporting(true);
 
       try {
-        if (allPages && allPages.length > 0) {
+        const sourcePages =
+          includeChanges || originalPages.length === 0
+            ? allPages
+            : originalPages;
+
+        if (sourcePages && sourcePages.length > 0) {
           // Multi-page document
           const start = startPage || 1;
-          const end = endPage || allPages.length;
-          pagesToExport = allPages
+          const end = endPage || sourcePages.length;
+          pagesToExport = sourcePages
             .filter(
               (p) =>
                 (p.page_number || 0) >= start && (p.page_number || 0) <= end,
             )
             .sort((a, b) => (a.page_number || 0) - (b.page_number || 0));
         } else if (data) {
-          // Single page or current page only
+          // Single page or current page only (fallback)
           pagesToExport = [data];
         }
 
@@ -122,6 +138,22 @@ export function usePdfExport() {
           );
           doc.setFont("Roboto", "normal");
 
+          // Determine hidden labels for this page
+          const hiddenOnThisPage = includeChanges
+            ? [
+                ...globalHiddenLabels,
+                ...(pageHiddenLabels[pageData.page_number || 0] || []),
+              ]
+            : [];
+
+          const isLineVisible = (line: TextLine) => {
+            if (!includeChanges) return true;
+            if (!line.layout_labels) return true;
+            return !line.layout_labels.some((lbl) =>
+              hiddenOnThisPage.includes(lbl),
+            );
+          };
+
           // Use blocks if available (better for read-aloud)
           if (
             useBlocks &&
@@ -129,6 +161,16 @@ export function usePdfExport() {
             pageData.layout.blocks.length > 0
           ) {
             pageData.layout.blocks.forEach((block: Block) => {
+              // Check visibility of block based on its lines or its own label (if block has label)
+              // Since block has layout_label, we can check that too.
+              // But currently Block interface has layout_label.
+              if (
+                includeChanges &&
+                hiddenOnThisPage.includes(block.layout_label)
+              ) {
+                return;
+              }
+
               const { bbox, text, line_indices } = block;
               if (!bbox) return;
 
@@ -143,6 +185,11 @@ export function usePdfExport() {
                   .map((idx: number) => pageData.layout.text_lines[idx])
                   .filter(Boolean);
                 if (lines.length > 0) {
+                  // Check if any line in block is hidden?
+                  // Usually if block label is hidden, whole block is hidden.
+                  // If individual lines are hidden but block is not...
+                  // For now assume block label controls block visibility.
+
                   const totalHeight = lines.reduce(
                     (sum: number, l: TextLine) => sum + (l.bbox[3] - l.bbox[1]),
                     0,
@@ -159,7 +206,14 @@ export function usePdfExport() {
           } else if (pageData.layout?.text_lines) {
             // Fallback to individual lines
             pageData.layout.text_lines.forEach(
-              (line: { bbox: number[]; text: string }) => {
+              (line: {
+                bbox: number[];
+                text: string;
+                layout_labels?: string[];
+              }) => {
+                // Check visibility
+                if (!isLineVisible(line as TextLine)) return;
+
                 const { bbox, text } = line;
                 if (!bbox) return;
 
@@ -182,7 +236,7 @@ export function usePdfExport() {
         setIsExporting(false);
       }
     },
-    [data, allPages],
+    [data, allPages, originalPages, globalHiddenLabels, pageHiddenLabels],
   );
 
   return { handleExportPdf, isExporting };

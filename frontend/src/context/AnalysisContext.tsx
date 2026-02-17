@@ -60,6 +60,17 @@ interface AnalysisContextType {
   toggleGlobalLabel: (label: string) => void;
   /** All unique labels across all pages */
   allLabels: string[];
+  /** Original pages data (before any edits) */
+  originalPages: PageData[];
+  /** Set original pages data */
+  setOriginalPages: (pages: PageData[]) => void;
+  /** Hidden labels per page (page number -> label array) */
+  pageHiddenLabels: Record<number, string[]>;
+  /** Set hidden labels for a specific page */
+  setPageHiddenLabels: (
+    pageNumber: number,
+    labels: string[] | ((prev: string[]) => string[]),
+  ) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -87,14 +98,34 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [hiddenLabels, setHiddenLabels] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
+  const [originalPages, setOriginalPages] = useState<PageData[]>([]);
+  const [pageHiddenLabels, setPageHiddenLabelsState] = useState<
+    Record<number, string[]>
+  >({});
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [globalHiddenLabels, setGlobalHiddenLabels] = useState<string[]>([]);
 
-  const toggleLabel = useCallback((label: string) => {
-    setHiddenLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
-    );
-  }, []);
+  const pageNumber = data?.page_number;
+
+  const toggleLabel = useCallback(
+    (label: string) => {
+      let newLabels: string[] = [];
+      setHiddenLabels((prev) => {
+        newLabels = prev.includes(label)
+          ? prev.filter((l) => l !== label)
+          : [...prev, label];
+
+        if (pageNumber) {
+          setPageHiddenLabelsState((prevPhl) => ({
+            ...prevPhl,
+            [pageNumber]: newLabels,
+          }));
+        }
+        return newLabels;
+      });
+    },
+    [pageNumber],
+  );
 
   const toggleGlobalLabel = useCallback((label: string) => {
     setGlobalHiddenLabels((prev) =>
@@ -105,6 +136,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   // Compute all unique labels across all pages
   const allLabels = useMemo(() => {
     const labels = new Set<string>();
+    // Use original pages to get all possible labels, as edits might remove them?
+    // Actually better to use current allPages to reflect current state
     allPages.forEach((page) => {
       page.layout?.text_lines?.forEach((line: TextLine) => {
         line.layout_labels?.forEach((lbl: string) => labels.add(lbl));
@@ -119,6 +152,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setHiddenLabels([]);
     setEditingIndex(null);
     setAllPages([]);
+    setOriginalPages([]);
+    setPageHiddenLabelsState({});
     setSelectedIndex(null);
     setGlobalHiddenLabels([]);
   }, []);
@@ -128,13 +163,23 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       if (!prev || !prev.layout?.text_lines) return prev;
       const newTextLines = [...prev.layout.text_lines];
       newTextLines[index] = { ...newTextLines[index], text: newText };
-      return {
+
+      const newData = {
         ...prev,
         layout: {
           ...prev.layout,
           text_lines: newTextLines,
         },
       };
+
+      // Sync with allPages
+      setAllPages((prevAllPages) =>
+        prevAllPages.map((p) =>
+          p.page_number === prev.page_number ? newData : p,
+        ),
+      );
+
+      return newData;
     });
   }, []);
 
@@ -145,19 +190,41 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         const newTextLines = prev.layout.text_lines.filter(
           (_, i) => i !== index,
         );
-        return {
+
+        const newData = {
           ...prev,
           layout: {
             ...prev.layout,
             text_lines: newTextLines,
           },
         };
+
+        // Sync with allPages
+        setAllPages((prevAllPages) =>
+          prevAllPages.map((p) =>
+            p.page_number === prev.page_number ? newData : p,
+          ),
+        );
+
+        return newData;
       });
       // Clear editing state if deleted line was being edited
       setEditingIndex(null);
       if (selectedIndex === index) setSelectedIndex(null);
     },
     [selectedIndex],
+  );
+
+  const setPageHiddenLabels = useCallback(
+    (pageNumber: number, labels: string[] | ((prev: string[]) => string[])) => {
+      setPageHiddenLabelsState((prev) => {
+        const currentLabels = prev[pageNumber] || [];
+        const newLabels =
+          typeof labels === "function" ? labels(currentLabels) : labels;
+        return { ...prev, [pageNumber]: newLabels };
+      });
+    },
+    [],
   );
 
   const value = useMemo(
@@ -181,6 +248,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       globalHiddenLabels,
       toggleGlobalLabel,
       allLabels,
+      originalPages,
+      setOriginalPages,
+      pageHiddenLabels,
+      setPageHiddenLabels,
     }),
     [
       data,
@@ -196,6 +267,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       globalHiddenLabels,
       toggleGlobalLabel,
       allLabels,
+      originalPages,
+      pageHiddenLabels,
+      setPageHiddenLabels,
     ],
   );
 
