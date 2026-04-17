@@ -2,6 +2,7 @@ import React from "react";
 import type { TextLine } from "../../../types";
 import { TextLineEdit } from "./TextLineEdit";
 import { TextLineActions } from "./TextLineActions";
+import { stripHtmlTags } from "../../../utils/textUtils";
 
 interface PositionedTextLineProps {
   line: TextLine;
@@ -58,19 +59,29 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   const hPct = (h / documentHeight) * 100;
 
   // Font Normalization Logic
-  // Calculate if the current line height is roughly equal to the median line height (likely body text)
-  // If so, use the median height to avoid "x-height" lines appearing tiny.
-  // We use a 25% tolerance to catch lines that are slightly taller/shorter but clearly part of the body.
+  // If the line height is within 25% of median, treat as body text and use median height
+  // to avoid x-height-only lines appearing disproportionately tiny.
   const isBodyText =
     medianLineHeight > 0 &&
     Math.abs(h - medianLineHeight) / medianLineHeight < 0.25;
 
   const effectiveH = isBodyText ? medianLineHeight : h;
 
-  // Scale factor to adjust visually (0.85 fits Times New Roman well within bbox)
-  const scaleFactor = 0.85;
-  const fontSize =
-    (effectiveH / documentHeight) * (1000 / aspectRatio) * scaleFactor;
+  // Height-based font size: scale the bbox height from document space → 1000px render space
+  const renderedDocHeight = 1000 / aspectRatio; // px height of the rendered 1000px-wide document
+  const heightBasedSize = (effectiveH / documentHeight) * renderedDocHeight * 0.82;
+
+  // Width-based font size: ensure the text string fits within the rendered bbox width.
+  // Average serif character width ≈ 0.52× the font size (empirical for Latin text).
+  // This prevents long lines from overflowing the bbox horizontally.
+  const renderedBboxWidth = (w / documentWidth) * 1000; // px width in render space
+  const plainText = stripHtmlTags(line.text);
+  const charCount = plainText.length || 1;
+  const AVG_CHAR_WIDTH_RATIO = 0.52;
+  const widthBasedSize = renderedBboxWidth / (charCount * AVG_CHAR_WIDTH_RATIO);
+
+  // Use the smaller of the two constraints so text fits both dimensions.
+  const fontSize = Math.min(heightBasedSize, widthBasedSize);
 
   // Determine visual state classes
   const isActive = isHighlighted || isSelected;
@@ -94,7 +105,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
         height: `${hPct}%`,
         fontSize: `${fontSize}px`,
         lineHeight: 1,
-        whiteSpace: "nowrap",
+        overflow: "hidden",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -116,10 +127,9 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
             <span
               className="block w-full h-full px-px font-serif leading-none"
               style={{
-                textAlign: "justify",
-                textAlignLast: "justify",
                 width: "100%",
                 display: "block",
+                whiteSpace: "nowrap",
               }}
               dangerouslySetInnerHTML={{ __html: line.text }}
             />
