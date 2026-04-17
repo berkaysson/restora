@@ -7,7 +7,7 @@ analysis pipeline to extract text from images and PDFs.
 
 Typical usage:
     from engine import core
-    clean_path, text, layout = await core.process_page("/path/to/document.pdf")
+    image_path, text, layout = await core.process_page("/path/to/document.pdf")
 """
 
 import time
@@ -33,7 +33,7 @@ async def process_page(image_path: str) -> tuple[str, str, dict]:
 
     Returns:
         A tuple containing:
-            - clean_path (str): Path to the processed image file.
+            - image_path (str): Path to the processed image file.
             - text (str): Full extracted text content, lines separated by newlines.
             - layout (dict): Layout analysis result containing:
                 - text_lines: List of detected text lines with coordinates
@@ -46,7 +46,7 @@ async def process_page(image_path: str) -> tuple[str, str, dict]:
         ValueError: If the image cannot be decoded.
 
     Example:
-        >>> clean, text, layout = await process_page("uploads/doc.pdf")
+        >>> image_path, text, layout = await process_page("uploads/doc.pdf")
         >>> print(f"Extracted {len(layout['text_lines'])} lines")
     """
     start_time = time.time()
@@ -70,19 +70,12 @@ async def process_page(image_path: str) -> tuple[str, str, dict]:
     if image_path.lower().endswith(".pdf"):
         image_path = await preprocessor.convert_pdf_to_image(image_path)
 
-    # 1. Clean Image
-    # 1. Skip Image Cleaning (Per user request)
-    clean_path = image_path
-    await log_manager.log(
-        f"OCR Engine: Skipping image cleaning, using original: {clean_path}", "backend"
-    )
-
-    # 2. Run OCR
-    text, layout = await ocr.run_ocr(clean_path)
+    # 1. Run OCR
+    text, layout = await ocr.run_ocr(image_path)
 
     duration = time.time() - start_time
     await log_manager.log(
         f"OCR Engine: Total processing time: {duration:.2f} seconds.", "backend"
     )
 
-    return clean_path, text, layout
+    return image_path, text, layout

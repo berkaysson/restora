@@ -43,19 +43,15 @@ Contains the logic for running inference and structuring the output.
 Handles raw file manipulation before AI processing.
 
 - **PDF Conversion**: Uses `pypdfium2` to render PDF pages into high-resolution images (scaled for optimal OCR accuracy).
-- **Image Cleaning**:
-  - Uses **OpenCV** to clean noise.
-  - Converts images to grayscale to standardize input for the models.
-  - _Note: Aggressive thresholding is currently disabled to preserve details._
+- **Extraction**: Allows extracting specific pages from multi-page PDFs.
 
 ## Workflow
 
 When a file is submitted to the engine:
 
 1.  **Input**: A file path (PDF or Image) is received by `core.process_page`.
-2.  **Conversion**: If PDF, it is converted to a `.jpg` image.
-3.  **Preprocessing**: The image is prepared (grayscale).
-4.  **Inference**:
+2.  **Conversion**: If PDF, it is converted to an image.
+3.  **Inference**:
     - Text locations are detected.
     - Text is recognized.
     - Page layout regions are classified.

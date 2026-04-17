@@ -6,7 +6,7 @@ This is the backend for the **Restora** project, a FastAPI-based application tha
 
 - **FastAPI Framework**: High-performance API.
 - **OCR Engine**: Uses [Surya OCR](https://github.com/VikParuchuri/surya) for accurate text recognition and layout analysis.
-- **Image Pre-processing**: Uses OpenCV for adaptive thresholding and cleaning.
+- **Image Pre-processing**: Handles PDF to image conversion and preparation.
 - **Database**: SQLite for simple and efficient data storage.
 - **Static File Serving**: Serves processed images directly.
 
@@ -104,14 +104,14 @@ Uploads a PDF page (as an image) or an image file for processing.
 - **Request**: `multipart/form-data` with a file field named `file`.
 - **Process**:
   1.  Saves the raw file to `uploads/`.
-  2.  Cleans the image using OpenCV (destroys noise, adaptive threshold).
+  2.  Converts PDF to image if necessary.
   3.  Runs Surya OCR to detect text and layout.
-  4.  Returns the processed text and layout JSON.
+  4.  Returns the extracted text and layout JSON.
 - **Response**:
   ```json
   {
     "status": "success",
-    "clean_image": "uploads/filename_clean.jpg",
+    "image_path": "uploads/filename.jpg",
     "text": "Extracted text content...",
     "layout": { ... }
   }

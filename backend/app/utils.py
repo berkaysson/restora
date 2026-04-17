@@ -34,7 +34,7 @@ async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> dict:
         Dictionary containing:
             - status: "success" or "error"
             - job_id: The processing job identifier
-            - clean_image: Path to the processed image
+            - image_path: Path to the processed image
             - text: Full extracted text content
             - layout: Layout analysis with text_lines and layout_blocks
             - typos: List of potentially misspelled words
@@ -50,7 +50,7 @@ async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> dict:
     try:
         await log_manager.log("Starting OCR processing...", "backend")
         # 1. Önce OCR yap
-        clean_path, text, layout = await process_page(file_path)
+        image_path, text, layout = await process_page(file_path)
 
         await log_manager.log("OCR completed. Analysing text...", "backend")
         # OCR'dan çıkan metni kelimelere böl
@@ -70,7 +70,7 @@ async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> dict:
         result_data = {
             "status": "success",
             "job_id": job_id,
-            "clean_image": clean_path,
+            "image_path": image_path,
             "text": text,
             "layout": layout,
             "typos": typos_list,

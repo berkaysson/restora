@@ -31,6 +31,7 @@
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
 - [x] Enable removing some sections from all pages. It should export with that
+- [ ] User can cancel jobs
 
 ## Export & Read-Aloud Features
 

@@ -35,7 +35,7 @@ async def upload_pdf_page(file: UploadFile = File(...)) -> dict:
         dict: Processing result containing:
             - status: "success" or "error"
             - job_id: Unique identifier for this job
-            - clean_image: Path to processed image
+            - image_path: Path to processed image
             - text: Extracted text content
             - layout: Layout analysis with text_lines and layout_blocks
             - typos: List of potential spelling errors
@@ -157,10 +157,10 @@ async def list_uploads() -> dict:
                     files_in_job = os.listdir(entry.path)
                     for f in files_in_job:
                         full_path = f"uploads/{job_id}/{f}"
-                        if "_clean" in f or f.endswith(".json") or f == "pages":
+                        if f.endswith(".json") or f == "pages":
                             processed_files.append(full_path)
                         elif f != "metadata.json" and f != "original.pdf":
-                            # Legacy: Assume the file without _clean/json/pages/metadata is original
+                            # Legacy: Assume the file without json/pages/metadata is original
                             original_file = full_path
                 except OSError:
                     continue
@@ -239,7 +239,7 @@ async def process_existing_file(job_id: str) -> dict:
     # Check if directory exists before listing
     if os.path.isdir(job_dir):
         for f in os.listdir(job_dir):
-            if "_clean" not in f and not f.endswith(".json"):
+            if not f.endswith(".json") and f != "metadata.json" and f != "original.pdf":
                 original_file = f
                 break
 
