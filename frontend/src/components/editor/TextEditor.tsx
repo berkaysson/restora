@@ -11,6 +11,7 @@ import { useEditor } from "../../context/EditorContext";
 
 // Hooks
 import { useZoom, useDragToPan } from "./hooks";
+import { stripHtmlTags } from "../../utils/textUtils";
 
 // Components
 import {
@@ -122,7 +123,7 @@ export const TextEditor: React.FC = () => {
   const startEditing = useCallback(
     (idx: number, currentText: string) => {
       setEditingIndex(idx);
-      setEditText(currentText);
+      setEditText(stripHtmlTags(currentText));
     },
     [setEditingIndex],
   );

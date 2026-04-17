@@ -77,7 +77,7 @@ export const ListTextLine: React.FC<ListTextLineProps> = ({
         />
       ) : (
         <>
-          {line.text}
+          <span dangerouslySetInnerHTML={{ __html: line.text }} />
           <div
             className={`absolute flex gap-1 transition-opacity top-1 right-1 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           >

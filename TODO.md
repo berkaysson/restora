@@ -32,7 +32,7 @@
 - [ ] We should store and save the deleted lines and sections.
 - [x] Enable removing some sections from all pages. It should export with that
 - [ ] User can cancel jobs
-- [ ] Bolded text should be bolded and the tags like <b> should be cleared from text.
+- [x] Bolded text should be bolded and the tags like <b> should be cleared from text.
 
 ## Export & Read-Aloud Features
 

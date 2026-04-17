@@ -113,17 +113,16 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
         />
       ) : (
         <>
-          <span
-            className="block w-full h-full px-px font-serif leading-none"
-            style={{
-              textAlign: "justify",
-              textAlignLast: "justify",
-              width: "100%",
-              display: "block",
-            }}
-          >
-            {line.text}
-          </span>
+            <span
+              className="block w-full h-full px-px font-serif leading-none"
+              style={{
+                textAlign: "justify",
+                textAlignLast: "justify",
+                width: "100%",
+                display: "block",
+              }}
+              dangerouslySetInnerHTML={{ __html: line.text }}
+            />
           <TextLineActions
             onEdit={onStartEdit}
             onDelete={onDelete}
