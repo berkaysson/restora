@@ -257,6 +257,18 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const setHiddenLabels = useCallback(
+    (labels: string[]) => {
+      if (pageNumber !== undefined) {
+        setPageHiddenLabelsState((prev) => ({
+          ...prev,
+          [pageNumber]: labels,
+        }));
+      }
+    },
+    [pageNumber],
+  );
+
   const value = useMemo(
     () => ({
       data,
@@ -264,14 +276,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       highlightIndex,
       setHighlightIndex,
       hiddenLabels,
-      setHiddenLabels: (labels: string[]) => {
-        if (pageNumber !== undefined) {
-          setPageHiddenLabelsState((prev) => ({
-            ...prev,
-            [pageNumber]: labels,
-          }));
-        }
-      },
+      setHiddenLabels,
       toggleLabel,
       clearAnalysis,
       editingIndex,
@@ -307,7 +312,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       originalPages,
       pageHiddenLabels,
       setPageHiddenLabels,
-      pageNumber,
+      setHiddenLabels,
     ],
   );
 
