@@ -27,7 +27,7 @@
 - [x] Add multiple page reader in ui with page controls
 - [ ] Enchance detected text section
 - [ ] Add more gestures to use detected text section.
-- [ ] Highlight words with OCR confidence below 80% in yellow within editor to prioritize critical corrections.
+- [ ] Highlight words with OCR confidence below 90% or user input value in yellow within editor to prioritize critical corrections.
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
 - [x] Enable removing some sections from all pages. It should export with that

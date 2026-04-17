@@ -5,8 +5,8 @@ Handles database initialization and connection management for the
 Restora application. Uses SQLite for simple, file-based storage.
 
 Tables:
-    - books: Stores book metadata (id, title, status)
-    - pages: Stores page data (image path, OCR text, layout JSON)
+    - documents: Multi-page document metadata (job-level)
+    - processed_pages: Individual page processing status and data
 """
 
 import sqlite3
@@ -19,19 +19,16 @@ def init_db() -> None:
     """Initialize the SQLite database with required tables.
 
     Creates tables for multi-page document processing with granular
-    page-level tracking. Maintains backward compatibility with legacy
-    'books' and 'pages' tables.
+    page-level tracking.
 
     Tables created:
         - documents: Multi-page document metadata (job-level)
         - processed_pages: Individual page processing status and data
-        - books: (Legacy) Book metadata
-        - pages: (Legacy) Page data
     """
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
 
-    # NEW: Documents table for multi-page PDFs
+    # Documents table for multi-page PDFs
     c.execute(
         """CREATE TABLE IF NOT EXISTS documents (
             id TEXT PRIMARY KEY,
@@ -46,7 +43,7 @@ def init_db() -> None:
         )"""
     )
 
-    # NEW: Processed pages table with detailed tracking
+    # Processed pages table with detailed tracking
     c.execute(
         """CREATE TABLE IF NOT EXISTS processed_pages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,20 +77,6 @@ def init_db() -> None:
            ON documents(status)"""
     )
 
-    # LEGACY: Books table (maintain backward compatibility)
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS books 
-                 (id INTEGER PRIMARY KEY, title TEXT, status TEXT)"""
-    )
-
-    # LEGACY: Pages table (maintain backward compatibility)
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS pages 
-                 (id INTEGER PRIMARY KEY, book_id INTEGER, page_num INTEGER, 
-                  image_path TEXT, raw_text TEXT, layout_json TEXT, 
-                  FOREIGN KEY(book_id) REFERENCES books(id))"""
-    )
-
     conn.commit()
     conn.close()
 
@@ -109,9 +92,9 @@ def get_db_connection() -> sqlite3.Connection:
 
     Example:
         >>> conn = get_db_connection()
-        >>> cursor = conn.execute("SELECT * FROM books")
+        >>> cursor = conn.execute("SELECT * FROM documents")
         >>> for row in cursor:
-        ...     print(row["title"])
+        ...     print(row["filename"])
     """
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row

@@ -7,7 +7,7 @@ This is the backend for the **Restora** project, a FastAPI-based application tha
 - **FastAPI Framework**: High-performance API.
 - **OCR Engine**: Uses [Surya OCR](https://github.com/VikParuchuri/surya) for accurate text recognition and layout analysis.
 - **Image Pre-processing**: Uses OpenCV for adaptive thresholding and cleaning.
-- **Database**: SQLite for simple and efficient data storage (Books and Pages).
+- **Database**: SQLite for simple and efficient data storage.
 - **Static File Serving**: Serves processed images directly.
 
 ## Prerequisites
