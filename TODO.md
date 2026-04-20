@@ -33,6 +33,7 @@
 - [x] Enable removing some sections from all pages. It should export with that
 - [ ] User can cancel jobs
 - [x] Bolded text should be bolded and the tags like <b> should be cleared from text.
+- [x] Add new modes to show layout blocks and blocks.
 
 ## Export & Read-Aloud Features
 

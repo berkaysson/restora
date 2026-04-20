@@ -30,6 +30,10 @@ interface AnalysisContextType {
   highlightIndex: number | null;
   /** Set the highlighted line index */
   setHighlightIndex: (index: number | null) => void;
+  /** Index of the currently highlighted layout block */
+  highlightedBlockIndex: number | null;
+  /** Set the highlighted layout block index */
+  setHighlightedBlockIndex: (index: number | null) => void;
   /** Layout labels currently hidden from view */
   hiddenLabels: string[];
   /** Set the hidden labels array */
@@ -94,7 +98,9 @@ const AnalysisContext = createContext<AnalysisContextType | undefined>(
  */
 export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageData | null>(null);
+  console.log("🚀 ~ AnalysisProvider ~ data:", data);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [highlightedBlockIndex, setHighlightedBlockIndex] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
   const [originalPages, setOriginalPages] = useState<PageData[]>([]);
@@ -275,6 +281,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setData,
       highlightIndex,
       setHighlightIndex,
+      highlightedBlockIndex,
+      setHighlightedBlockIndex,
       hiddenLabels,
       setHiddenLabels,
       toggleLabel,
@@ -298,6 +306,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     [
       data,
       highlightIndex,
+      highlightedBlockIndex,
       hiddenLabels,
       toggleLabel,
       clearAnalysis,

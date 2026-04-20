@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { ZoomController } from "../common/ZoomController";
 
-import type { TextLine } from "../../types";
+import type { TextLine, LayoutBlock } from "../../types";
 import { useAnalysis } from "../../context/AnalysisContext";
 
 export const ImagePreview: React.FC = () => {
-  const { data, highlightIndex, setHighlightIndex, hiddenLabels } =
+  const { data, highlightIndex, setHighlightIndex, highlightedBlockIndex, setHighlightedBlockIndex, hiddenLabels } =
     useAnalysis();
   const [zoom, setZoom] = useState(1);
   const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
@@ -218,6 +218,54 @@ export const ImagePreview: React.FC = () => {
                     }}
                     onMouseEnter={() => setHighlightIndex(idx)}
                     onMouseLeave={() => setHighlightIndex(null)}
+                  />
+                );
+              })}
+              {/* Layout blocks overlay */}
+              {data.layout?.layout_blocks?.map((block: LayoutBlock, idx: number) => {
+                const [bx0, by0, bx1, by1] = block.bbox;
+                const isHl = highlightedBlockIndex === idx;
+
+                // Simple label-to-color mapping mirroring PositionedLayoutBlock
+                const BORDER_COLORS: Record<string, string> = {
+                  "Section-header": "rgba(139,92,246,0.75)",
+                  "Text": "rgba(59,130,246,0.65)",
+                  "Table": "rgba(34,197,94,0.75)",
+                  "Figure": "rgba(251,146,60,0.75)",
+                  "Caption": "rgba(236,72,153,0.65)",
+                  "List": "rgba(20,184,166,0.65)",
+                  "Footnote": "rgba(234,179,8,0.65)",
+                };
+                const BG_COLORS: Record<string, string> = {
+                  "Section-header": "rgba(139,92,246,0.12)",
+                  "Text": "rgba(59,130,246,0.10)",
+                  "Table": "rgba(34,197,94,0.12)",
+                  "Figure": "rgba(251,146,60,0.12)",
+                  "Caption": "rgba(236,72,153,0.10)",
+                  "List": "rgba(20,184,166,0.10)",
+                  "Footnote": "rgba(234,179,8,0.10)",
+                };
+                const borderColor = BORDER_COLORS[block.label] ?? "rgba(100,116,139,0.65)";
+                const bgColor = BG_COLORS[block.label] ?? "rgba(100,116,139,0.10)";
+
+                return (
+                  <div
+                    key={`lb-${idx}`}
+                    className="absolute transition-all duration-150"
+                    style={{
+                      left: bx0,
+                      top: by0,
+                      width: bx1 - bx0,
+                      height: by1 - by0,
+                      border: `1.5px solid ${borderColor}`,
+                      backgroundColor: isHl ? bgColor.replace("0.1", "0.22").replace("0.12", "0.24") : bgColor,
+                      borderRadius: "3px",
+                      zIndex: isHl ? 20 : 5,
+                      boxShadow: isHl ? `0 0 0 2px ${borderColor}` : "none",
+                      pointerEvents: "auto",
+                    }}
+                    onMouseEnter={() => setHighlightedBlockIndex(idx)}
+                    onMouseLeave={() => setHighlightedBlockIndex(null)}
                   />
                 );
               })}

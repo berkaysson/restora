@@ -1,10 +1,13 @@
 import React from "react";
 import { ZoomController } from "../../common/ZoomController";
 import { PageNavigator } from "../../common/PageNavigator";
-import { Layers, FileText } from "lucide-react";
+import { Layers, FileText, AlignLeft, LayoutTemplate } from "lucide-react";
+
+export type EditorViewMode = "text-lines" | "layout-blocks";
 
 interface EditorHeaderProps {
   lineCount: number;
+  blockCount: number;
   width?: number;
   height?: number;
   hasDimensions: boolean;
@@ -20,6 +23,8 @@ interface EditorHeaderProps {
   allLabels: string[];
   globalHiddenLabels: string[];
   onToggleGlobalLabel: (label: string) => void;
+  viewMode: EditorViewMode;
+  onViewModeChange: (mode: EditorViewMode) => void;
 }
 
 /**
@@ -27,6 +32,7 @@ interface EditorHeaderProps {
  */
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
   lineCount,
+  blockCount,
   width,
   height,
   hasDimensions,
@@ -42,6 +48,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   allLabels,
   globalHiddenLabels,
   onToggleGlobalLabel,
+  viewMode,
+  onViewModeChange,
 }) => {
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-1 p-2 border-b shadow-sm border-base-content/5 bg-base-100">
@@ -49,7 +57,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex flex-col gap-0">
             <span className="font-mono text-[10px] leading-tight text-base-content/50">
-              {lineCount} LINES
+              {viewMode === "text-lines" ? `${lineCount} SATIR` : `${blockCount} BLOK`}
             </span>
             <span className="font-mono text-[9px] leading-tight text-base-content/30">
               {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
@@ -60,6 +68,36 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center rounded-lg border border-base-content/10 bg-base-200/60 p-0.5 gap-0.5">
+            <button
+              onClick={() => onViewModeChange("text-lines")}
+              title="Metin Satırları Görünümü"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 ${
+                viewMode === "text-lines"
+                  ? "bg-primary text-primary-content shadow-sm"
+                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+              }`}
+            >
+              <AlignLeft size={11} />
+              Metin
+            </button>
+            <button
+              onClick={() => onViewModeChange("layout-blocks")}
+              title="Mizanpaj Blokları Görünümü"
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 ${
+                viewMode === "layout-blocks"
+                  ? "bg-secondary text-secondary-content shadow-sm"
+                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+              }`}
+            >
+              <LayoutTemplate size={11} />
+              Mizanpaj
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-base-content/10" />
+
           <ZoomController
             zoom={zoom}
             onZoomIn={onZoomIn}
