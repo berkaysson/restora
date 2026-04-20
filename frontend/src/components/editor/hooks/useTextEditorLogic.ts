@@ -82,8 +82,8 @@ export const useTextEditorLogic = () => {
     if (!scrollContainerRef.current || !hasDimensions || !aspectRatio) return;
     const container = scrollContainerRef.current;
 
-    const availableWidth = container.clientWidth - 64;
-    const availableHeight = container.clientHeight - 64;
+    const availableWidth = container.clientWidth - 64; // px-8 (32*2)
+    const availableHeight = container.clientHeight - 92; // pt-3 (12) + pb-20 (80)
 
     const baseWidth = 1000;
     const baseHeight = baseWidth / aspectRatio;

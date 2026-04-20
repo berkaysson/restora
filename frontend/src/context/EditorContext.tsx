@@ -39,7 +39,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
  * @param children - Child components to wrap
  */
 export function EditorProvider({ children }: { children: ReactNode }) {
-  const [fontSize, setFontSize] = useState(14);
+  const [fontSize, setFontSize] = useState(16);
   const [isWordWrap, setIsWordWrap] = useState(true);
 
   const value = useMemo(

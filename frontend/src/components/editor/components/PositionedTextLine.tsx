@@ -71,7 +71,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   // Height-based font size: scale the bbox height from document space → 1000px render space
   const renderedDocHeight = 1000 / aspectRatio; // px height of the rendered 1000px-wide document
   const heightBasedSize =
-    (effectiveH / documentHeight) * renderedDocHeight * 0.82;
+    (effectiveH / documentHeight) * renderedDocHeight * 0.88;
 
   // Width-based font size: ensure the text string fits within the rendered bbox width.
   // Average serif character width ≈ 0.52× the font size (empirical for Latin text).
@@ -79,7 +79,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   const renderedBboxWidth = (w / documentWidth) * 1000; // px width in render space
   const plainText = stripHtmlTags(line.text);
   const charCount = plainText.length || 1;
-  const AVG_CHAR_WIDTH_RATIO = 0.52;
+  const AVG_CHAR_WIDTH_RATIO = 0.48;
   const widthBasedSize = renderedBboxWidth / (charCount * AVG_CHAR_WIDTH_RATIO);
 
   // Use the smaller of the two constraints so text fits both dimensions.

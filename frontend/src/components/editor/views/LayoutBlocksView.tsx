@@ -94,11 +94,11 @@ export const LayoutBlocksView: React.FC<LayoutBlocksViewProps> = ({
             const effectiveH = isBodyText ? medianLineHeight : lineH_abs;
             const renderedDocHeight = 1000 / aspectRatio;
             const heightBasedSize =
-              (effectiveH / documentHeight) * renderedDocHeight * 0.82;
+              (effectiveH / documentHeight) * renderedDocHeight * 0.88;
             const renderedBboxWidth = ((lx2 - lx1) / documentWidth) * 1000;
             const plainText = stripHtmlTags(line.text);
             const charCount = plainText.length || 1;
-            const AVG_CHAR_WIDTH_RATIO = 0.52;
+            const AVG_CHAR_WIDTH_RATIO = 0.48;
             const widthBasedSize =
               renderedBboxWidth / (charCount * AVG_CHAR_WIDTH_RATIO);
             const fontSize = Math.min(heightBasedSize, widthBasedSize);

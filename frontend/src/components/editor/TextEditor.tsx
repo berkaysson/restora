@@ -98,7 +98,7 @@ export const TextEditor: React.FC = () => {
 
       <div
         ref={scrollContainerRef}
-        className={`flex-1 overflow-auto p-8 relative transition-colors select-none ${
+        className={`flex-1 overflow-auto pt-3 px-8 pb-20 relative transition-colors select-none ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         } bg-base-200/50 text-base-content/20`}
         style={{

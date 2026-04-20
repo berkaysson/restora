@@ -84,11 +84,11 @@ export const ConfidenceView: React.FC<ConfidenceViewProps> = ({
           const effectiveH = isBodyText ? medianLineHeight : h;
 
           const heightBasedSize =
-            (effectiveH / documentHeight) * renderedDocHeight * 0.82;
+            (effectiveH / documentHeight) * renderedDocHeight * 0.88;
 
           const plainText = stripHtmlTags(line.text);
           const charCount = plainText.length || 1;
-          const AVG_CHAR_WIDTH_RATIO = 0.52;
+          const AVG_CHAR_WIDTH_RATIO = 0.48;
           const widthBasedSize = lineW / (charCount * AVG_CHAR_WIDTH_RATIO);
 
           const fontSize = Math.min(heightBasedSize, widthBasedSize);
