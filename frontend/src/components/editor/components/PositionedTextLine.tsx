@@ -3,6 +3,7 @@ import type { TextLine } from "../../../types";
 import { TextLineEdit } from "./TextLineEdit";
 import { TextLineActions } from "./TextLineActions";
 import { stripHtmlTags } from "../../../utils/textUtils";
+import { LABEL_COLORS, DEFAULT_COLOR } from "../constants";
 
 interface PositionedTextLineProps {
   line: TextLine;
@@ -69,7 +70,8 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
 
   // Height-based font size: scale the bbox height from document space → 1000px render space
   const renderedDocHeight = 1000 / aspectRatio; // px height of the rendered 1000px-wide document
-  const heightBasedSize = (effectiveH / documentHeight) * renderedDocHeight * 0.82;
+  const heightBasedSize =
+    (effectiveH / documentHeight) * renderedDocHeight * 0.82;
 
   // Width-based font size: ensure the text string fits within the rendered bbox width.
   // Average serif character width ≈ 0.52× the font size (empirical for Latin text).
@@ -82,6 +84,10 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
 
   // Use the smaller of the two constraints so text fits both dimensions.
   const fontSize = Math.min(heightBasedSize, widthBasedSize);
+
+  const confidencePct = Math.round((line.confidence ?? 1) * 100);
+  const primaryLabel = line.layout_labels?.[0] || "No Label";
+  const colors = LABEL_COLORS[primaryLabel] ?? DEFAULT_COLOR;
 
   // Determine visual state classes
   const isActive = isHighlighted || isSelected;
@@ -124,24 +130,44 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
         />
       ) : (
         <>
-            <span
-              className="block w-full h-full px-px font-serif leading-none"
-              style={{
-                width: "100%",
-                display: "block",
-                whiteSpace: "nowrap",
-              }}
-              dangerouslySetInnerHTML={{ __html: line.text }}
-            />
+          <span
+            className="block w-full h-full px-px font-serif leading-none"
+            style={{
+              width: "100%",
+              display: "block",
+              whiteSpace: "nowrap",
+            }}
+            dangerouslySetInnerHTML={{ __html: line.text }}
+          />
           <TextLineActions
             onEdit={onStartEdit}
             onDelete={onDelete}
             isVisible={isActive}
           />
           <div
-            className={`absolute left-0 px-4 py-2 text-base font-bold rounded-lg shadow-2xl pointer-events-none -top-14 bg-neutral text-neutral-content whitespace-nowrap z-100 ${isActive ? "block" : "hidden group-hover:block"}`}
+            className={`absolute flex items-center gap-2 pointer-events-none -top-14 left-0 transition-opacity duration-150 z-100 ${
+              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
           >
-            ({line.layout_labels?.join(", ") || "No Label"})
+            <span
+              className="text-[13px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-2xl whitespace-nowrap"
+              style={{
+                backgroundColor: colors.border,
+                color: "#fff",
+                letterSpacing: "0.1em",
+              }}
+            >
+              {line.layout_labels?.join(", ") || "No Label"}
+            </span>
+            <span
+              className="text-[13px] font-mono font-bold px-3 py-1.5 rounded-lg shadow-2xl whitespace-nowrap"
+              style={{
+                backgroundColor: "rgb(17, 24, 39)",
+                color: "#fff",
+              }}
+            >
+              Doğruluk: {confidencePct}%
+            </span>
           </div>
         </>
       )}
