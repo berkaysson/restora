@@ -43,7 +43,7 @@ export const TextLineEdit: React.FC<TextLineEditProps> = ({
         value={editText}
         onChange={(e) => onEditTextChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="flex-1 px-2 py-1 text-sm border rounded input input-sm input-bordered bg-base-100 text-base-content"
+        className="flex-1 px-4 py-3 text-lg border-2 rounded-xl input input-lg input-bordered bg-base-100 text-base-content"
         autoFocus
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -54,10 +54,10 @@ export const TextLineEdit: React.FC<TextLineEditProps> = ({
           onSave();
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        className="btn btn-xs btn-success btn-circle"
+        className="btn btn-md btn-success btn-circle shadow-lg"
         title="Kaydet (Enter)"
       >
-        <Check className="w-3 h-3" />
+        <Check className="w-5 h-5 transition-transform hover:scale-110" />
       </button>
       <button
         onClick={(e) => {
@@ -65,10 +65,10 @@ export const TextLineEdit: React.FC<TextLineEditProps> = ({
           onCancel();
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        className="btn btn-xs btn-error btn-circle"
+        className="btn btn-md btn-error btn-circle shadow-lg"
         title="İptal (Escape)"
       >
-        <X className="w-3 h-3" />
+        <X className="w-5 h-5 transition-transform hover:scale-110" />
       </button>
     </div>
   );

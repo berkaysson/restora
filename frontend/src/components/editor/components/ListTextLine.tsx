@@ -79,7 +79,7 @@ export const ListTextLine: React.FC<ListTextLineProps> = ({
         <>
           <span dangerouslySetInnerHTML={{ __html: line.text }} />
           <div
-            className={`absolute flex gap-1 transition-opacity top-1 right-1 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+            className={`absolute flex gap-2 transition-opacity top-1 right-1 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           >
             <button
               onClick={(e) => {
@@ -87,10 +87,10 @@ export const ListTextLine: React.FC<ListTextLineProps> = ({
                 onStartEdit();
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-5 h-5 rounded shadow-md bg-primary text-primary-content hover:bg-primary-focus"
+              className="flex items-center justify-center w-9 h-9 rounded-lg shadow-xl bg-primary text-primary-content hover:bg-primary-focus"
               title="Metni düzenle"
             >
-              <Pencil className="w-3 h-3" />
+              <Pencil className="w-5 h-5" />
             </button>
             <button
               onClick={(e) => {
@@ -98,10 +98,10 @@ export const ListTextLine: React.FC<ListTextLineProps> = ({
                 onDelete();
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-5 h-5 rounded shadow-md bg-error text-error-content hover:bg-error/80"
+              className="flex items-center justify-center w-9 h-9 rounded-lg shadow-xl bg-error text-error-content hover:bg-error/80"
               title="Satırı sil"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-5 h-5" />
             </button>
           </div>
         </>

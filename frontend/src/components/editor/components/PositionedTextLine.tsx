@@ -105,7 +105,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
         height: `${hPct}%`,
         fontSize: `${fontSize}px`,
         lineHeight: 1,
-        overflow: "hidden",
+        overflow: "visible",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -139,7 +139,7 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
             isVisible={isActive}
           />
           <div
-            className={`absolute left-0 px-2 py-1 text-xs rounded shadow-xl pointer-events-none -top-8 bg-neutral text-neutral-content whitespace-nowrap z-100 ${isActive ? "block" : "hidden group-hover:block"}`}
+            className={`absolute left-0 px-4 py-2 text-base font-bold rounded-lg shadow-2xl pointer-events-none -top-14 bg-neutral text-neutral-content whitespace-nowrap z-100 ${isActive ? "block" : "hidden group-hover:block"}`}
           >
             ({line.layout_labels?.join(", ") || "No Label"})
           </div>

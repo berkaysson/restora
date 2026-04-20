@@ -55,11 +55,11 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     <div className="sticky top-0 z-20 flex flex-col gap-1 p-2 border-b shadow-sm border-base-content/5 bg-base-100">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-0">
-            <span className="font-mono text-[10px] leading-tight text-base-content/50">
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-sm font-black leading-tight text-base-content/80 uppercase tracking-tighter">
               {viewMode === "text-lines" ? `${lineCount} SATIR` : `${blockCount} BLOK`}
             </span>
-            <span className="font-mono text-[9px] leading-tight text-base-content/30">
+            <span className="font-mono text-[11px] font-bold leading-tight text-base-content/50">
               {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
             </span>
           </div>
@@ -73,25 +73,25 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             <button
               onClick={() => onViewModeChange("text-lines")}
               title="Metin Satırları Görünümü"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 ${
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
                 viewMode === "text-lines"
-                  ? "bg-primary text-primary-content shadow-sm"
+                  ? "bg-primary text-primary-content shadow-xl scale-105"
                   : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
               }`}
             >
-              <AlignLeft size={11} />
+              <AlignLeft size={16} />
               Metin
             </button>
             <button
               onClick={() => onViewModeChange("layout-blocks")}
               title="Mizanpaj Blokları Görünümü"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 ${
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
                 viewMode === "layout-blocks"
-                  ? "bg-secondary text-secondary-content shadow-sm"
+                  ? "bg-secondary text-secondary-content shadow-xl scale-105"
                   : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
               }`}
             >
-              <LayoutTemplate size={11} />
+              <LayoutTemplate size={16} />
               Mizanpaj
             </button>
           </div>
@@ -112,17 +112,17 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       {/* Labels Management Accordion */}
       {(allLabels.length > 0 || availableLabels.length > 0) && (
         <details className="overflow-hidden border rounded-lg collapse collapse-arrow bg-base-200/30 border-base-content/5 group">
-          <summary className="collapse-title flex items-center gap-2 min-h-0 py-2 px-3 text-[10px] font-bold uppercase tracking-widest cursor-pointer hover:bg-base-content/5 transition-colors">
-            <Layers size={14} className="text-secondary" />
+          <summary className="collapse-title flex items-center gap-3 min-h-0 py-4 px-6 text-xs font-black uppercase tracking-widest cursor-pointer hover:bg-base-content/5 transition-colors">
+            <Layers size={18} className="text-secondary" />
             KATMAN VE ETİKET YÖNETİMİ
           </summary>
           <div className="collapse-content pb-2! px-2! flex flex-col gap-2 mt-1">
             {/* Global section toggle — all pages */}
             {allLabels.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/60 border border-base-content/5">
-                <div className="flex items-center gap-1 mr-1">
-                  <Layers size={12} className="text-secondary" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <Layers size={14} className="text-secondary" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
                     Tüm Sayfalar
                   </span>
                 </div>
@@ -153,9 +153,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             {/* Per-page section toggle */}
             {availableLabels.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/40 border border-base-content/5">
-                <div className="flex items-center gap-1 mr-1">
-                  <FileText size={12} className="text-primary" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <FileText size={14} className="text-primary" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
                     Bu Sayfa
                   </span>
                 </div>{" "}

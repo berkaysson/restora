@@ -50,11 +50,11 @@ export const LayoutBlocksView: React.FC<LayoutBlocksViewProps> = ({
       >
         {layoutBlocks.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-base-content/40">
-              <span className="font-mono text-sm">
+            <div className="flex flex-col items-center gap-3 text-base-content/40">
+              <span className="font-mono text-base font-medium">
                 Mizanpaj bloğu bulunamadı
               </span>
-              <span className="text-xs">
+              <span className="text-sm">
                 Bu sayfa için layout analizi mevcut değil
               </span>
             </div>

@@ -112,45 +112,46 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
     >
       {/* Label badge – top left corner */}
       <div
-        className="absolute flex items-center gap-1 pointer-events-none"
+        className="absolute flex items-center gap-2 pointer-events-none"
         style={{
-          top: "-5px",
-          left: "-5px",
+          top: "-12px",
+          left: "-12px",
           transform: "translateY(-100%)",
-          paddingBottom: "2px",
+          paddingBottom: "6px",
         }}
       >
         <span
-          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow-md whitespace-nowrap transition-opacity duration-150 ${
+          className={`text-[13px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-xl whitespace-nowrap transition-opacity duration-150 ${
             isHighlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           }`}
           style={{
             backgroundColor: colors.border,
             color: "#fff",
-            letterSpacing: "0.08em",
+            letterSpacing: "0.1em",
           }}
         >
           {block.label}
         </span>
         <span
-          className={`text-[9px] font-mono px-1.5 py-0.5 rounded shadow-md whitespace-nowrap transition-opacity duration-150 ${
+          className={`text-[13px] font-mono font-bold px-3 py-1.5 rounded-lg shadow-xl whitespace-nowrap transition-opacity duration-150 ${
             isHighlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           }`}
           style={{
-            backgroundColor: "rgba(17,24,39,0.85)",
-            color: "#e5e7eb",
+            backgroundColor: "rgb(17, 24, 39)",
+            color: "#fff",
           }}
         >
+          Doğruluk:
           {confidencePct}%
         </span>
       </div>
 
       {/* Corner index indicator */}
       <span
-        className={`absolute bottom-0.5 right-1 text-[8px] font-mono pointer-events-none transition-opacity duration-150 ${
-          isHighlighted ? "opacity-60" : "opacity-0 group-hover:opacity-40"
+        className={`absolute bottom-2 right-2 text-xs font-black font-mono pointer-events-none transition-opacity duration-150 ${
+          isHighlighted ? "opacity-100" : "opacity-0 group-hover:opacity-60"
         }`}
-        style={{ color: colors.text }}
+        style={{ color: colors.text, textShadow: "0 0 10px white" }}
       >
         #{idx + 1}
       </span>
