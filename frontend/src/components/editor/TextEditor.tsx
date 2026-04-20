@@ -6,13 +6,14 @@ import { useTextEditorLogic } from "./hooks";
 
 // Components
 import { EditorEmptyState, EditorHeader } from "./components";
-import { PositionedView, ListView, LayoutBlocksView } from "./views";
+import { PositionedView, ListView, LayoutBlocksView, ConfidenceView } from "./views";
 
 /**
  * TextEditor component for viewing and editing OCR-detected text.
- * Supports two view modes:
+ * Supports three view modes:
  * - Positioned view: Text lines positioned according to their bounding boxes
- * - List view: Simple list of text lines (fallback when dimensions unavailable)
+ * - Layout blocks view: Document layout visualisation with block regions
+ * - Confidence view: Heatmap overlay showing OCR confidence per line
  */
 export const TextEditor: React.FC = () => {
   const { fontSize } = useEditor();
@@ -138,7 +139,7 @@ export const TextEditor: React.FC = () => {
               onDeleteLine={deleteTextLine}
               medianLineHeight={medianLineHeight}
             />
-          ) : (
+          ) : viewMode === "layout-blocks" ? (
             <LayoutBlocksView
               layoutBlocks={layoutBlocks ?? []}
               textLines={textLines ?? []}
@@ -150,6 +151,16 @@ export const TextEditor: React.FC = () => {
               onHighlightChange={setHighlightedBlockIndex}
               medianLineHeight={medianLineHeight}
               isLineHidden={isLineHidden}
+            />
+          ) : (
+            <ConfidenceView
+              textLines={textLines}
+              zoom={zoom}
+              aspectRatio={aspectRatio!}
+              documentWidth={width!}
+              documentHeight={height!}
+              isLineHidden={isLineHidden}
+              medianLineHeight={medianLineHeight}
             />
           )
         ) : (

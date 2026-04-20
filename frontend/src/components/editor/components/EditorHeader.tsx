@@ -1,9 +1,9 @@
 import React from "react";
 import { ZoomController } from "../../common/ZoomController";
 import { PageNavigator } from "../../common/PageNavigator";
-import { Layers, FileText, AlignLeft, LayoutTemplate } from "lucide-react";
+import { Layers, FileText, AlignLeft, LayoutTemplate, Gauge } from "lucide-react";
 
-export type EditorViewMode = "text-lines" | "layout-blocks";
+export type EditorViewMode = "text-lines" | "layout-blocks" | "confidence";
 
 interface EditorHeaderProps {
   lineCount: number;
@@ -57,7 +57,11 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex flex-col gap-1">
             <span className="font-mono text-sm font-black leading-tight text-base-content/80 uppercase tracking-tighter">
-              {viewMode === "text-lines" ? `${lineCount} SATIR` : `${blockCount} BLOK`}
+              {viewMode === "text-lines"
+                ? `${lineCount} SATIR`
+                : viewMode === "layout-blocks"
+                ? `${blockCount} BLOK`
+                : `${lineCount} SATIR`}
             </span>
             <span className="font-mono text-[11px] font-bold leading-tight text-base-content/50">
               {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
@@ -93,6 +97,18 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             >
               <LayoutTemplate size={16} />
               Mizanpaj
+            </button>
+            <button
+              onClick={() => onViewModeChange("confidence")}
+              title="Güven Haritası Görünümü"
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
+                viewMode === "confidence"
+                  ? "bg-warning text-warning-content shadow-xl scale-105"
+                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+              }`}
+            >
+              <Gauge size={16} />
+              Güven
             </button>
           </div>
 
