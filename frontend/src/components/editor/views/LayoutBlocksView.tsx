@@ -2,6 +2,7 @@ import React from "react";
 import type { TextLine, LayoutBlock } from "../../../types";
 import { PositionedLayoutBlock } from "../components/PositionedLayoutBlock";
 import { calculateTextLayout } from "../../../hooks/useTextLayout";
+import { useEditor } from "../../../context/EditorContext";
 
 interface LayoutBlocksViewProps {
   layoutBlocks: LayoutBlock[];
@@ -32,6 +33,7 @@ export const LayoutBlocksView: React.FC<LayoutBlocksViewProps> = ({
   medianLineHeight,
   isLineHidden,
 }) => {
+  const { showLayoutDetails } = useEditor();
   return (
     <div
       className="mx-auto transition-all origin-top"
@@ -70,6 +72,7 @@ export const LayoutBlocksView: React.FC<LayoutBlocksViewProps> = ({
             documentWidth={documentWidth}
             documentHeight={documentHeight}
             isHighlighted={highlightedBlockIndex === idx}
+            showDetails={showLayoutDetails}
             onMouseEnter={() => onHighlightChange(idx)}
             onMouseLeave={() => onHighlightChange(null)}
           />

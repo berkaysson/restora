@@ -34,12 +34,13 @@
 - [x] Bolded text should be bolded and the tags like <b> should be cleared from text.
 - [x] Add new modes to show layout blocks and blocks.
 - [x] ***Extract the logic of calculating font size and text position from views-layers and create a reusable hook. Thus the export pdf hook can use it to produce same structure for each page.
+- [x] Lets show the reading order in LayoutBlocksView.
 
 ## Export & Read-Aloud Features
 
 - [x] Export as searchable pdf
 - [x] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
-- [ ] Add semantic HTML/Markdown export with proper heading structure for browser read-aloud and reader view compatibility.
+- [ ] Add semantic Markdown export with proper heading structure for browser read-aloud and reader view compatibility. We can use reading order (position) to create page structure.
 - [x] Export whole pdf with all pages.
 - [x] Exported pdfs dont look same with ui text editor. Paragraphs and sections looks out of position.
 

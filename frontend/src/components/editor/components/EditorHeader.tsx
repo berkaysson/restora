@@ -8,7 +8,10 @@ import {
   LayoutTemplate,
   Gauge,
   RotateCcw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+import { useEditor } from "../../../context/EditorContext";
 
 export type EditorViewMode = "text-lines" | "layout-blocks" | "confidence";
 
@@ -60,6 +63,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   viewMode,
   onViewModeChange,
 }) => {
+  const { showLayoutDetails, setShowLayoutDetails } = useEditor();
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-1 p-2 border-b shadow-sm border-base-content/5 bg-base-100">
       <div className="flex items-center justify-between">
@@ -78,6 +82,47 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           </div>
           <div className="hidden w-px h-4 bg-base-content/10 sm:block" />
           <PageNavigator />
+          {viewMode === "layout-blocks" && (
+            <>
+              <div className="hidden w-px h-4 bg-base-content/10 sm:block" />
+              <div
+                className="flex items-center gap-2 px-2 py-1 transition-all rounded-lg cursor-pointer bg-secondary/5 hover:bg-secondary/10 group/toggle"
+                onClick={() => setShowLayoutDetails(!showLayoutDetails)}
+                title={
+                  showLayoutDetails
+                    ? "Okuma sırası numarasını gizle"
+                    : "Okuma sırası numarasını göster"
+                }
+              >
+                <div
+                  className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${
+                    showLayoutDetails ? "bg-secondary" : "bg-base-content/20"
+                  }`}
+                >
+                  <div
+                    className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm"
+                    style={{ left: showLayoutDetails ? "18px" : "2px" }}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {showLayoutDetails ? (
+                    <Eye size={12} className="text-secondary" />
+                  ) : (
+                    <EyeOff size={12} className="text-base-content/40" />
+                  )}
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-widest transition-colors ${
+                      showLayoutDetails
+                        ? "text-secondary"
+                        : "text-base-content/40"
+                    }`}
+                  >
+                    Okuma Sırası
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

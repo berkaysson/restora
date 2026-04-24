@@ -27,6 +27,10 @@ interface EditorContextType {
   isWordWrap: boolean;
   /** Toggle word wrap setting */
   setIsWordWrap: (wrap: boolean) => void;
+  /** Whether to always show layout block details (labels/confidence) */
+  showLayoutDetails: boolean;
+  /** Toggle layout block details visibility */
+  setShowLayoutDetails: (show: boolean) => void;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -41,6 +45,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSize] = useState(16);
   const [isWordWrap, setIsWordWrap] = useState(true);
+  const [showLayoutDetails, setShowLayoutDetails] = useState(false);
 
   const value = useMemo(
     () => ({
@@ -48,8 +53,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
       setFontSize,
       isWordWrap,
       setIsWordWrap,
+      showLayoutDetails,
+      setShowLayoutDetails,
     }),
-    [fontSize, isWordWrap],
+    [fontSize, isWordWrap, showLayoutDetails],
   );
 
   return (

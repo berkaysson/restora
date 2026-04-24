@@ -8,6 +8,7 @@ interface PositionedLayoutBlockProps {
   documentWidth: number;
   documentHeight: number;
   isHighlighted: boolean;
+  showDetails: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }
@@ -23,6 +24,7 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
   documentWidth,
   documentHeight,
   isHighlighted,
+  showDetails,
   onMouseEnter,
   onMouseLeave,
 }) => {
@@ -101,11 +103,22 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
 
       {/* Corner index indicator */}
       <span
-        className={`absolute bottom-2 right-2 text-xs font-black font-mono pointer-events-none transition-opacity duration-150 ${
-          isHighlighted ? "opacity-100" : "opacity-0 group-hover:opacity-60"
+        className={`absolute bottom-1 right-2 text-sm font-black font-mono pointer-events-none transition-all duration-300 flex items-center gap-1.5 ${
+          isHighlighted || showDetails
+            ? "opacity-90 scale-100"
+            : "opacity-0 group-hover:opacity-60 scale-95"
         }`}
-        style={{ color: colors.text, textShadow: "0 0 10px white" }}
+        style={{
+          color: colors.text,
+          textShadow: "0 0 12px white, 0 0 4px white",
+          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+        }}
       >
+        <span
+          className={`text-[9px] uppercase tracking-tighter transition-opacity duration-300 ${isHighlighted ? "opacity-70" : "opacity-0"}`}
+        >
+          Okuma Sırası:
+        </span>
         #{block.position || idx + 1}
       </span>
     </div>
