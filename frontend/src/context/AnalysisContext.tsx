@@ -75,6 +75,8 @@ interface AnalysisContextType {
     pageNumber: number,
     labels: string[] | ((prev: string[]) => string[]),
   ) => void;
+  /** Reset all label filters (local and global) */
+  resetFilters: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -194,6 +196,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setGlobalHiddenLabels([]);
   }, []);
 
+  const resetFilters = useCallback(() => {
+    setPageHiddenLabelsState({});
+    setGlobalHiddenLabels([]);
+  }, []);
+
   const updateTextLine = useCallback((index: number, newText: string) => {
     setData((prev) => {
       if (!prev || !prev.layout?.text_lines) return prev;
@@ -302,6 +309,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setOriginalPages,
       pageHiddenLabels,
       setPageHiddenLabels,
+      resetFilters,
     }),
     [
       data,
@@ -322,6 +330,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       pageHiddenLabels,
       setPageHiddenLabels,
       setHiddenLabels,
+      resetFilters,
     ],
   );
 

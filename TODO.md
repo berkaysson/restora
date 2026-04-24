@@ -25,8 +25,7 @@
 - [x] Manuel text correction before export
 - [x] Code split in text editor and other big frontend components.
 - [x] Add multiple page reader in ui with page controls
-- [ ] Enchance detected text section
-- [ ] Add more gestures to use detected text section.
+- [x] Enchance detected text section
 - [x] Highlight words with OCR confidence below 90% or user input value in yellow within editor to prioritize critical corrections.
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
@@ -42,7 +41,7 @@
 - [x] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
 - [ ] Add semantic HTML/Markdown export with proper heading structure for browser read-aloud and reader view compatibility.
 - [x] Export whole pdf with all pages.
-- [ ] Exported pdfs dont look same with ui text editor. Paragraphs and sections looks out of position.
+- [x] Exported pdfs dont look same with ui text editor. Paragraphs and sections looks out of position.
 
 ## Testing & Documentation
 

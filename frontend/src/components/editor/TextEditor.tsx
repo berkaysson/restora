@@ -50,6 +50,7 @@ export const TextEditor: React.FC = () => {
     globalHiddenLabels,
     toggleGlobalLabel,
     allLabels,
+    resetFilters,
 
     // Refs
     scrollContainerRef,
@@ -92,6 +93,7 @@ export const TextEditor: React.FC = () => {
         allLabels={allLabels}
         globalHiddenLabels={globalHiddenLabels}
         onToggleGlobalLabel={toggleGlobalLabel}
+        onResetFilters={resetFilters}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
       />

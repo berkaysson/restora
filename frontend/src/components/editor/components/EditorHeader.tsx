@@ -1,7 +1,14 @@
 import React from "react";
 import { ZoomController } from "../../common/ZoomController";
 import { PageNavigator } from "../../common/PageNavigator";
-import { Layers, FileText, AlignLeft, LayoutTemplate, Gauge } from "lucide-react";
+import {
+  Layers,
+  FileText,
+  AlignLeft,
+  LayoutTemplate,
+  Gauge,
+  RotateCcw,
+} from "lucide-react";
 
 export type EditorViewMode = "text-lines" | "layout-blocks" | "confidence";
 
@@ -23,6 +30,7 @@ interface EditorHeaderProps {
   allLabels: string[];
   globalHiddenLabels: string[];
   onToggleGlobalLabel: (label: string) => void;
+  onResetFilters: () => void;
   viewMode: EditorViewMode;
   onViewModeChange: (mode: EditorViewMode) => void;
 }
@@ -48,6 +56,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   allLabels,
   globalHiddenLabels,
   onToggleGlobalLabel,
+  onResetFilters,
   viewMode,
   onViewModeChange,
 }) => {
@@ -56,63 +65,63 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-sm font-black leading-tight text-base-content/80 uppercase tracking-tighter">
+            <span className="font-mono text-sm font-black leading-tight tracking-tighter uppercase text-base-content/80">
               {viewMode === "text-lines"
                 ? `${lineCount} SATIR`
                 : viewMode === "layout-blocks"
-                ? `${blockCount} BLOK`
-                : `${lineCount} SATIR`}
+                  ? `${blockCount} BLOK`
+                  : `${lineCount} SATIR`}
             </span>
             <span className="font-mono text-[11px] font-bold leading-tight text-base-content/50">
               {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
             </span>
           </div>
-          <div className="h-4 w-px bg-base-content/10 hidden sm:block" />
+          <div className="hidden w-px h-4 bg-base-content/10 sm:block" />
           <PageNavigator />
         </div>
 
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
-          <div className="flex items-center rounded-lg border border-base-content/10 bg-base-200/60 p-0.5 gap-0.5">
+          <div className="p-1 join bg-base-200/50">
             <button
               onClick={() => onViewModeChange("text-lines")}
-              title="Metin Satırları Görünümü"
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
+              className={`join-item btn btn-xs h-8 px-3 transition-all duration-200 ${
                 viewMode === "text-lines"
-                  ? "bg-primary text-primary-content shadow-xl scale-105"
-                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+                  ? "btn-primary shadow-lg scale-105 z-10"
+                  : "btn-ghost text-base-content/50 hover:text-base-content/80"
               }`}
+              title="Metin Satırları Görünümü"
             >
-              <AlignLeft size={16} />
-              Metin
+              <AlignLeft size={14} />
+              <span className="hidden sm:inline">Metin</span>
             </button>
             <button
               onClick={() => onViewModeChange("layout-blocks")}
-              title="Mizanpaj Blokları Görünümü"
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
+              className={`join-item btn btn-xs h-8 px-3 transition-all duration-200 ${
                 viewMode === "layout-blocks"
-                  ? "bg-secondary text-secondary-content shadow-xl scale-105"
-                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+                  ? "btn-secondary shadow-lg scale-105 z-10"
+                  : "btn-ghost text-base-content/50 hover:text-base-content/80"
               }`}
+              title="Mizanpaj Blokları Görünümü"
             >
-              <LayoutTemplate size={16} />
-              Mizanpaj
+              <LayoutTemplate size={14} />
+              <span className="hidden sm:inline">Mizanpaj</span>
             </button>
             <button
               onClick={() => onViewModeChange("confidence")}
-              title="Güven Haritası Görünümü"
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tighter transition-all duration-150 ${
+              className={`join-item btn btn-xs h-8 px-3 transition-all duration-200 ${
                 viewMode === "confidence"
-                  ? "bg-warning text-warning-content shadow-xl scale-105"
-                  : "text-base-content/50 hover:text-base-content/80 hover:bg-base-content/5"
+                  ? "btn-warning shadow-lg scale-105 z-10"
+                  : "btn-ghost text-base-content/50 hover:text-base-content/80"
               }`}
+              title="Güven Haritası Görünümü"
             >
-              <Gauge size={16} />
-              Güven
+              <Gauge size={14} />
+              <span className="hidden sm:inline">Güven</span>
             </button>
           </div>
 
-          <div className="h-4 w-px bg-base-content/10" />
+          <div className="w-px h-4 bg-base-content/10" />
 
           <ZoomController
             zoom={zoom}
@@ -128,9 +137,25 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       {/* Labels Management Accordion */}
       {(allLabels.length > 0 || availableLabels.length > 0) && (
         <details className="overflow-hidden border rounded-lg collapse collapse-arrow bg-base-200/30 border-base-content/5 group">
-          <summary className="collapse-title flex items-center gap-3 min-h-0 py-4 px-6 text-xs font-black uppercase tracking-widest cursor-pointer hover:bg-base-content/5 transition-colors">
-            <Layers size={18} className="text-secondary" />
-            KATMAN VE ETİKET YÖNETİMİ
+          <summary className="flex items-center min-h-0 gap-3 px-3 py-2 text-xs font-black transition-colors cursor-pointer collapse-title hover:bg-base-content/5">
+            <Layers size={16} className="text-secondary" />
+            <span className="tracking-tight uppercase">
+              Katman ve Etiket Yönetimi
+            </span>
+
+            {(hiddenLabels.length > 0 || globalHiddenLabels.length > 0) && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onResetFilters();
+                }}
+                className="z-30 btn btn-ghost btn-xs btn-square text-secondary tooltip tooltip-left"
+                data-tip="Ayarları Sıfırla"
+              >
+                <RotateCcw size={14} strokeWidth={3} />
+              </button>
+            )}
           </summary>
           <div className="collapse-content pb-2! px-2! flex flex-col gap-2 mt-1">
             {/* Global section toggle — all pages */}
