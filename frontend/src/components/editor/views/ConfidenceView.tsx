@@ -1,6 +1,6 @@
 import React from "react";
 import type { TextLine } from "../../../types";
-import { stripHtmlTags } from "../../../utils/textUtils";
+import { calculateTextLayout } from "../../../hooks/useTextLayout";
 import { LABEL_COLORS, DEFAULT_COLOR } from "../constants";
 
 interface ConfidenceViewProps {
@@ -50,7 +50,6 @@ export const ConfidenceView: React.FC<ConfidenceViewProps> = ({
   isLineHidden,
   medianLineHeight,
 }) => {
-  const scaleX = 1000 / documentWidth;
   const renderedDocHeight = 1000 / aspectRatio;
 
   return (
@@ -72,26 +71,24 @@ export const ConfidenceView: React.FC<ConfidenceViewProps> = ({
         {textLines.map((line: TextLine, idx: number) => {
           if (isLineHidden(line)) return null;
 
+          const { position, fontSize } = calculateTextLayout({
+            bbox: line.bbox,
+            text: line.text,
+            documentWidth,
+            documentHeight,
+            targetWidth: 1000,
+            targetHeight: renderedDocHeight,
+            medianLineHeight,
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const [x1, y1, x2, y2] = line.bbox;
-          const w = x2 - x1;
-          const h = y2 - y1;
-          const lineW = w * scaleX;
-
-          // Font Normalization Logic (matching PositionedTextLine)
-          const isBodyText =
-            medianLineHeight > 0 &&
-            Math.abs(h - medianLineHeight) / medianLineHeight < 0.25;
-          const effectiveH = isBodyText ? medianLineHeight : h;
-
-          const heightBasedSize =
-            (effectiveH / documentHeight) * renderedDocHeight * 0.88;
-
-          const plainText = stripHtmlTags(line.text);
-          const charCount = plainText.length || 1;
-          const AVG_CHAR_WIDTH_RATIO = 0.48;
-          const widthBasedSize = lineW / (charCount * AVG_CHAR_WIDTH_RATIO);
-
-          const fontSize = Math.min(heightBasedSize, widthBasedSize);
+          const {
+            leftPct: left,
+            topPct: top,
+            widthPct: wPct,
+            heightPct: hPct,
+          } = position;
 
           const bg = confidenceToColor(line.confidence);
           const pct = Math.round(line.confidence * 100);
@@ -108,10 +105,10 @@ export const ConfidenceView: React.FC<ConfidenceViewProps> = ({
               key={idx}
               className="absolute flex items-center group hover:z-50"
               style={{
-                left: `${(x1 / documentWidth) * 100}%`,
-                top: `${(y1 / documentHeight) * 100}%`,
-                width: `${(w / documentWidth) * 100}%`,
-                height: `${(h / documentHeight) * 100}%`,
+                left: `${left}%`,
+                top: `${top}%`,
+                width: `${wPct}%`,
+                height: `${hPct}%`,
                 fontSize: `${fontSize}px`,
                 lineHeight: 1,
               }}

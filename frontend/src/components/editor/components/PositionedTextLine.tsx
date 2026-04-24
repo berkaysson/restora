@@ -1,8 +1,8 @@
 import React from "react";
 import type { TextLine } from "../../../types";
+import { useTextLayout } from "../../../hooks/useTextLayout";
 import { TextLineEdit } from "./TextLineEdit";
 import { TextLineActions } from "./TextLineActions";
-import { stripHtmlTags } from "../../../utils/textUtils";
 import { LABEL_COLORS, DEFAULT_COLOR } from "../constants";
 
 interface PositionedTextLineProps {
@@ -50,42 +50,21 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
   onDelete,
   medianLineHeight,
 }) => {
-  const [x1, y1, x2, y2] = line.bbox;
-  const w = x2 - x1;
-  const h = y2 - y1;
+  const { position, fontSize } = useTextLayout({
+    bbox: line.bbox,
+    text: line.text,
+    documentWidth,
+    documentHeight,
+    targetWidth: 1000,
+    targetHeight: 1000 / aspectRatio,
+    medianLineHeight,
+  });
 
-  const left = (x1 / documentWidth) * 100;
-  const top = (y1 / documentHeight) * 100;
-  const wPct = (w / documentWidth) * 100;
-  const hPct = (h / documentHeight) * 100;
-
-  // Font Normalization Logic
-  // If the line height is within 25% of median, treat as body text and use median height
-  // to avoid x-height-only lines appearing disproportionately tiny.
-  const isBodyText =
-    medianLineHeight > 0 &&
-    Math.abs(h - medianLineHeight) / medianLineHeight < 0.25;
-
-  const effectiveH = isBodyText ? medianLineHeight : h;
-
-  // Height-based font size: scale the bbox height from document space → 1000px render space
-  const renderedDocHeight = 1000 / aspectRatio; // px height of the rendered 1000px-wide document
-  const heightBasedSize =
-    (effectiveH / documentHeight) * renderedDocHeight * 0.88;
-
-  // Width-based font size: ensure the text string fits within the rendered bbox width.
-  // Average serif character width ≈ 0.52× the font size (empirical for Latin text).
-  // This prevents long lines from overflowing the bbox horizontally.
-  const renderedBboxWidth = (w / documentWidth) * 1000; // px width in render space
-  const plainText = stripHtmlTags(line.text);
-  const charCount = plainText.length || 1;
-  const AVG_CHAR_WIDTH_RATIO = 0.48;
-  const widthBasedSize = renderedBboxWidth / (charCount * AVG_CHAR_WIDTH_RATIO);
-
-  // Use the smaller of the two constraints so text fits both dimensions.
-  const fontSize = Math.min(heightBasedSize, widthBasedSize);
+  const { leftPct: left, topPct: top, widthPct: wPct, heightPct: hPct } =
+    position;
 
   const confidencePct = Math.round((line.confidence ?? 1) * 100);
+
   const primaryLabel = line.layout_labels?.[0] || "No Label";
   const colors = LABEL_COLORS[primaryLabel] ?? DEFAULT_COLOR;
 

@@ -1,7 +1,7 @@
 import React from "react";
 import type { TextLine, LayoutBlock } from "../../../types";
 import { PositionedLayoutBlock } from "../components/PositionedLayoutBlock";
-import { stripHtmlTags } from "../../../utils/textUtils";
+import { calculateTextLayout } from "../../../hooks/useTextLayout";
 
 interface LayoutBlocksViewProps {
   layoutBlocks: LayoutBlock[];
@@ -80,28 +80,22 @@ export const LayoutBlocksView: React.FC<LayoutBlocksViewProps> = ({
           {textLines.map((line, idx) => {
             if (isLineHidden(line)) return null;
 
-            const [lx1, ly1, lx2, ly2] = line.bbox;
-            const left = (lx1 / documentWidth) * 100;
-            const top = (ly1 / documentHeight) * 100;
-            const wPct = ((lx2 - lx1) / documentWidth) * 100;
-            const hPct = ((ly2 - ly1) / documentHeight) * 100;
+            const { position, fontSize } = calculateTextLayout({
+              bbox: line.bbox,
+              text: line.text,
+              documentWidth,
+              documentHeight,
+              targetWidth: 1000,
+              targetHeight: 1000 / aspectRatio,
+              medianLineHeight,
+            });
 
-            // Replicate Font Size Logic
-            const lineH_abs = ly2 - ly1;
-            const isBodyText =
-              medianLineHeight > 0 &&
-              Math.abs(lineH_abs - medianLineHeight) / medianLineHeight < 0.25;
-            const effectiveH = isBodyText ? medianLineHeight : lineH_abs;
-            const renderedDocHeight = 1000 / aspectRatio;
-            const heightBasedSize =
-              (effectiveH / documentHeight) * renderedDocHeight * 0.88;
-            const renderedBboxWidth = ((lx2 - lx1) / documentWidth) * 1000;
-            const plainText = stripHtmlTags(line.text);
-            const charCount = plainText.length || 1;
-            const AVG_CHAR_WIDTH_RATIO = 0.48;
-            const widthBasedSize =
-              renderedBboxWidth / (charCount * AVG_CHAR_WIDTH_RATIO);
-            const fontSize = Math.min(heightBasedSize, widthBasedSize);
+            const {
+              leftPct: left,
+              topPct: top,
+              widthPct: wPct,
+              heightPct: hPct,
+            } = position;
 
             return (
               <div
