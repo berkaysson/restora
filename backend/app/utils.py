@@ -9,6 +9,7 @@ import json
 import os
 from spellchecker import SpellChecker
 from logger import log_manager
+from app.schemas import OCRResponse
 from ocr_engine import process_page
 
 
@@ -17,7 +18,7 @@ from ocr_engine import process_page
 spell = SpellChecker(language=None)
 
 
-async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> dict:
+async def process_ocr_and_spellcheck(file_path: str, job_id: str) -> OCRResponse:
     """Process a file through OCR and perform spellcheck analysis.
 
     This is the main processing pipeline that:

@@ -6,10 +6,10 @@
 - [x] Filter noise and keep only content
 - [x] Organize backend code with modulizing engine
 - [ ] Implement dewarping algorithm in engine/preprocessor.py to straighten curved lines from physical book scans for accurate OCR.
-- [ ] Integrate Surya OCR reading order detection in engine/ocr.py to ensure logical text flow (columns, footnotes) for read-aloud.
+- [x] *** Integrate Surya OCR reading order detection in engine/ocr.py to ensure logical text flow (columns, footnotes) for read-aloud.
 - [ ] Add post-processing in engine/core.py to repair hyphenation and ligatures from old prints for seamless audio playback.
 - [ ] Auto-strip low-confidence OCR blocks marked as noise in backend/app/routers/ocr.py to reduce manual cleanup.
-- [ ] For multi page documents we should inform user about which page is being processed.
+- [x] For multi page documents we should inform user about which page is being processed.
 
 ## Database & Storage
 

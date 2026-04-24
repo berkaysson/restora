@@ -60,8 +60,12 @@ export const PositionedTextLine: React.FC<PositionedTextLineProps> = ({
     medianLineHeight,
   });
 
-  const { leftPct: left, topPct: top, widthPct: wPct, heightPct: hPct } =
-    position;
+  const {
+    leftPct: left,
+    topPct: top,
+    widthPct: wPct,
+    heightPct: hPct,
+  } = position;
 
   const confidencePct = Math.round((line.confidence ?? 1) * 100);
 

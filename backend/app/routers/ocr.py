@@ -17,12 +17,13 @@ from logger import log_manager
 from app.utils import process_ocr_and_spellcheck
 from storage_manager import storage_manager
 import json
+from app.schemas import OCRResponse
 
 router = APIRouter()
 
 
 @router.post("/upload")
-async def upload_pdf_page(file: UploadFile = File(...)) -> dict:
+async def upload_pdf_page(file: UploadFile = File(...)) -> OCRResponse:
     """Upload and process a document for OCR text extraction.
 
     Accepts PDF or image files, saves them to a unique job directory,
@@ -217,7 +218,7 @@ async def delete_upload(job_id: str) -> dict:
 
 
 @router.post("/process-existing/{job_id}")
-async def process_existing_file(job_id: str) -> dict:
+async def process_existing_file(job_id: str) -> OCRResponse:
     """Reprocess an existing document job.
 
     Finds the original file in the job directory and runs it

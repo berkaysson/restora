@@ -14,6 +14,7 @@ import { useLayout } from "../context/LayoutContext";
 import { useAnalysis } from "../context/AnalysisContext";
 import { useLogs } from "../context/LogContext";
 import { fixTurkishHyphens } from "../utils/textUtils";
+import type { PageData } from "../types";
 
 /**
  * Hook for handling file uploads and OCR processing.
@@ -86,7 +87,7 @@ export function useFileProcessing() {
         const { pages } = res.data;
 
         // Parse layout and fix text for all pages
-        const processedPages = pages.map((page: any) => {
+        const processedPages: PageData[] = pages.map((page: any) => {
           const layout = page.ocr_data?.layout || { text_lines: [] };
           const text = page.ocr_data?.text || "";
 
@@ -111,7 +112,7 @@ export function useFileProcessing() {
         // Set initial page data to page 1
         if (processedPages.length > 0) {
           const firstPage = processedPages.find(
-            (p: any) => p.page_number === 1,
+            (p: PageData) => p.page_number === 1,
           );
           if (firstPage) {
             setHiddenLabels([]);

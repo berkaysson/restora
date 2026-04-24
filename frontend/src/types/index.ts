@@ -59,6 +59,8 @@ export interface TextLine {
    * Examples: ["Header"], ["Text"], ["Table"]
    */
   layout_labels?: string[];
+  /** Reading order position */
+  position?: number;
 }
 
 /**
@@ -79,6 +81,8 @@ export interface Block {
 
   /** Indices of the text lines that make up this block */
   line_indices: number[];
+  /** Reading order position */
+  position?: number;
 }
 
 /**
@@ -100,6 +104,8 @@ export interface LayoutBlock {
 
   /** Polygon vertices defining the block boundary */
   polygon?: number[][];
+  /** Reading order position */
+  position?: number;
 }
 
 /**

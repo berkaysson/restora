@@ -81,6 +81,7 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                                 "confidence": getattr(block, "confidence", 1.0),
                                 "bbox": block.bbox,
                                 "polygon": block.polygon,
+                                "position": getattr(block, "position", 0),
                             }
                         )
                 except Exception as e:
@@ -100,6 +101,7 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                     cx = (line_bbox[0] + line_bbox[2]) / 2
                     cy = (line_bbox[1] + line_bbox[3]) / 2
 
+                    line_position = 0
                     for lb in layout_blocks:
                         l_bbox = lb["bbox"]
                         # Check if line center is inside layout block
@@ -108,6 +110,9 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                             and l_bbox[1] <= cy <= l_bbox[3]
                         ):
                             assigned_labels.append(lb["label"])
+                            # Use the position from the first matching block as the line's primary position
+                            if line_position == 0:
+                                line_position = lb["position"]
 
                     line_data = {
                         "text": getattr(line, "text", ""),
@@ -118,6 +123,7 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                         "original_text_good": True,
                         "words": [],
                         "layout_labels": assigned_labels,
+                        "position": line_position,
                     }
                     text_lines.append(line_data)
 
@@ -198,6 +204,7 @@ def _group_lines_into_blocks(text_lines: list, layout_blocks: list) -> list:
             "bbox": [x1, y1, x2, y2],
             "confidence": sum(l["confidence"] for l in lines) / len(lines),
             "layout_label": layout_blocks[i]["label"],
+            "position": layout_blocks[i]["position"],
             "line_indices": [text_lines.index(l) for l in lines] # Keep track of source lines
         })
 
@@ -246,5 +253,6 @@ def _create_block_from_cluster(blocks, cluster, all_lines):
         "bbox": [x1, y1, x2, y2],
         "confidence": sum(l["confidence"] for l in cluster) / len(cluster),
         "layout_label": "Text", # Default for ungrouped
+        "position": 0, # Default for ungrouped
         "line_indices": [all_lines.index(l) for l in cluster]
     })

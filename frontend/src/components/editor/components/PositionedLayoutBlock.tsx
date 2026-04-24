@@ -106,7 +106,7 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
         }`}
         style={{ color: colors.text, textShadow: "0 0 10px white" }}
       >
-        #{idx + 1}
+        #{block.position || idx + 1}
       </span>
     </div>
   );
