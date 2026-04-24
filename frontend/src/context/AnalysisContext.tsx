@@ -100,9 +100,10 @@ const AnalysisContext = createContext<AnalysisContextType | undefined>(
  */
 export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<PageData | null>(null);
-  console.log("🚀 ~ AnalysisProvider ~ data:", data);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  const [highlightedBlockIndex, setHighlightedBlockIndex] = useState<number | null>(null);
+  const [highlightedBlockIndex, setHighlightedBlockIndex] = useState<
+    number | null
+  >(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [allPages, setAllPages] = useState<PageData[]>([]);
   const [originalPages, setOriginalPages] = useState<PageData[]>([]);

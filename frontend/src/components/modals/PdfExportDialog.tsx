@@ -23,7 +23,6 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
   const [range, setRange] = useState<[number, number]>([1, totalPages]);
   const [startInput, setStartInput] = useState<string>("1");
   const [endInput, setEndInput] = useState<string>(totalPages.toString());
-  const [useBlocks, setUseBlocks] = useState(true);
   const [includeChanges, setIncludeChanges] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -67,7 +66,7 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
 
   const handleExport = async () => {
     setIsLoading(true);
-    await onExport(range[0], range[1], useBlocks, includeChanges);
+    await onExport(range[0], range[1], true, includeChanges);
     setIsLoading(false);
     onClose();
   };
@@ -140,25 +139,6 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
           </div>
 
           {/* Options Section */}
-          <div className="pt-2 border-t border-base-content/10">
-            <label className="flex items-center gap-3 pr-4 cursor-pointer label">
-              <span className="flex-1 label-text">
-                <span className="block font-medium">Akıllı Paragraf Modu</span>
-              </span>
-              <input
-                type="checkbox"
-                className="toggle toggle-primary toggle-sm"
-                checked={useBlocks}
-                onChange={(e) => setUseBlocks(e.target.checked)}
-                disabled={isLoading}
-              />
-            </label>
-            <span className="block text-xs text-base-content/60 mt-0.5">
-              Metinleri paragraf blokları halinde dışa aktarır (Sesli okuma için
-              önerilir).
-            </span>
-          </div>
-
           <div className="pt-4 border-t border-base-content/10">
             <label className="flex items-center gap-3 pr-4 cursor-pointer label">
               <span className="flex-1 label-text">
@@ -177,6 +157,18 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
             <span className="block text-xs text-base-content/60 mt-0.5">
               Editörde yapılan düzenlemeleri, silinen satırları ve gizlenen
               bölümleri PDF'e yansıtır. Kapalıyken orijinal metin kullanılır.
+            </span>
+          </div>
+
+          <div className="pt-2 border-t border-base-content/10">
+            <label className="flex items-center gap-3 label">
+              <span className="flex-1 label-text">
+                <span className="block font-medium">Akıllı Paragraf Modu</span>
+              </span>
+            </label>
+            <span className="block text-xs text-base-content/80 mt-0.5">
+              Metinleri paragraf blokları halinde dışa aktarır (Sesli okuma
+              performansını arttırır).
             </span>
           </div>
 

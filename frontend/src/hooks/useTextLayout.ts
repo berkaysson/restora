@@ -10,6 +10,11 @@ export interface TextLayoutOptions {
   targetWidth: number;
   targetHeight: number;
   medianLineHeight: number;
+  /**
+   * When true, skips the width-based font size constraint.
+   * Use this for PDF export where text wrapping (maxWidth) is handled separately.
+   */
+  skipWidthConstraint?: boolean;
 }
 
 /**
@@ -25,6 +30,7 @@ export function calculateTextLayout(options: TextLayoutOptions) {
     targetWidth,
     targetHeight,
     medianLineHeight,
+    skipWidthConstraint = false,
   } = options;
 
   const [x1, y1, x2, y2] = bbox;
@@ -58,13 +64,17 @@ export function calculateTextLayout(options: TextLayoutOptions) {
 
   // Width-based font size: ensure the text string fits within the rendered width.
   // Average serif character width ≈ 0.48× the font size.
+  // Skipped for PDF export where `maxWidth` handles text wrapping.
   const plainText = stripHtmlTags(text);
   const charCount = plainText.length || 1;
   const AVG_CHAR_WIDTH_RATIO = 0.48;
   const widthBasedSize = width / (charCount * AVG_CHAR_WIDTH_RATIO);
 
   // Use the smaller of the two constraints so text fits both dimensions.
-  const fontSize = Math.min(heightBasedSize, widthBasedSize);
+  // In PDF mode, use height only since text wrapping is handled by the renderer.
+  const fontSize = skipWidthConstraint
+    ? heightBasedSize
+    : Math.min(heightBasedSize, widthBasedSize);
 
   return {
     position: {
