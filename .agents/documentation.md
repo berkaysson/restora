@@ -81,8 +81,23 @@ Uygulamanın iş akışları (Use Case'ler) ve veri transfer objeleri (DTO'lar) 
 > [!NOTE]
 > Eski `app/utils.py` içinde bulunan `process_ocr_and_spellcheck` altındaki yazım denetimi (Spellcheck) mantığı, bu aşamada bilinçli olarak atlanmış olup ileride ayrı bir servis olarak tasarlanacaktır.
 
+### [Aşama 4] API (Presentation) Katmanı ve DI (Tamamlandı)
+Yeni mimarinin dış dünyaya açılan kapısı olan API katmanı ve bağımlılık yönetimi (Dependency Injection) tamamlandı. Mevcut sistem bozulmadan yeni yapı `/api/v2` altında paralel olarak yayına alındı.
+
+#### Tamamlanan Dosyalar ve Tanımlar:
+- **Dependency Injection (`api/dependencies.py`):**
+    - FastAPI `Depends` kullanılarak altyapı servisleri ve Use Case'lerin otomatik enjekte edilmesi sağlandı.
+    - Concrete implementasyonlar (SqliteRepository, LocalFileStorage vb.) burada bağlanır.
+- **Routers (`api/routers/`):**
+    - `ocr.py`: Doküman yükleme, listeleme, silme ve yeniden işleme (`ReprocessDocumentUseCase`) endpoint'lerini içerir.
+    - `documents.py`: Çoklu sayfa desteği olan dokümanların detaylı durum ve sayfa bazlı veri sorgularını yönetir.
+- **Aggregated Router (`api/router.py`):**
+    - Tüm yeni nesil router'ları tek bir çatı altında toplar.
+- **App Integration & Startup (`app/main.py`):**
+    - Yeni API katmanı `/api/v2` prefix'i ile uygulamaya dahil edildi.
+    - `AsyncProcessingQueue` worker'larının başlatılması (startup) ve durdurulması (shutdown) FastAPI event'lerine entegre edildi. DI (Dependency Injection) kullanılarak singleton queue örneği sisteme bağlandı.
+
 ## 3. Gelecek Adımlar (Roadmap)
 
-1. **API (Presentation) Katmanı ve DI:** Mevcut karmaşık FastAPI router'larının (`ocr.py`, `pdf.py`) tamamen silinip, yeni Use Case'lerin enjekte edileceği (Dependency Injection) temiz endpoint'lerin oluşturulması.
-2. **App Startup:** Uygulama başlatılırken `AsyncProcessingQueue` worker'larının start edilmesi.
-3. **Cleanup:** Yeni yapı tam entegre edildikten sonra eski `db_helpers.py`, `storage_manager.py` ve `queue_manager.py` gibi dosyaların temizlenmesi.
+1. **Cleanup:** Yeni yapı tam entegre edildikten ve frontend geçişi sağlandıktan sonra eski `db_helpers.py`, `storage_manager.py`, `queue_manager.py` ve `app/routers/` altındaki eski dosyaların temizlenmesi.
+2. **Frontend Migration:** Frontend tarafındaki API çağrılarının `/api/v2` endpoint'lerine yönlendirilmesi.

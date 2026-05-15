@@ -1,7 +1,8 @@
 import os
 import time
 import shutil
-from domain.interfaces import IDocumentRepository, IFileStorage, IOCREngine
+from typing import Optional
+from domain.interfaces import IDocumentRepository, IFileStorage, IOCREngine, INotificationService
 from infrastructure.storage.local_file_storage import LocalFileStorage
 from logger import log_manager
 
@@ -174,5 +175,3 @@ class ProcessPageUseCase:
                     "page_number": page_number,
                     "error": str(e)
                 })
-      # Hata durumunda da sadece bu sayfayı güncelle (1 sorgu)
-            self.repository.save_page(page)

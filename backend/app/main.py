@@ -5,6 +5,7 @@ import os, time
 from database import init_db
 from logger import log_manager
 from app.routers import ocr, logs, pdf, websocket
+from api.router import api_router
 
 app = FastAPI()
 
@@ -56,6 +57,11 @@ async def startup_event():  # Renamed from startup
 
     asyncio.create_task(processing_queue.start_processing())
 
+    # Start new clean architecture queue
+    from api.dependencies import get_task_queue
+    new_queue = get_task_queue()
+    await new_queue.start()
+
     # Also ensure uploads exists here just in case logging needs it or logic
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
@@ -76,6 +82,9 @@ app.include_router(logs.router, tags=["Logs"])
 app.include_router(pdf.router, tags=["PDF Processing"])
 app.include_router(websocket.router, tags=["Real-time Updates"])
 
+# New Clean Architecture API
+app.include_router(api_router, prefix="/api/v2")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -86,3 +95,8 @@ async def shutdown_event():
     from queue_manager import processing_queue
 
     await processing_queue.stop_processing()
+
+    # Stop new clean architecture queue
+    from api.dependencies import get_task_queue
+    new_queue = get_task_queue()
+    await new_queue.stop()
