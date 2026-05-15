@@ -41,3 +41,24 @@ class IOCREngine(ABC):
     @abstractmethod
     async def process_page(self, image_path: str) -> Tuple[str, OCRResult, LayoutData]:
         pass
+
+class ITaskQueue(ABC):
+    @abstractmethod
+    async def enqueue_page(self, job_id: str, page_number: int, file_path: str) -> None:
+        """Bir sayfayı işlenmek üzere kuyruğa ekler."""
+        pass
+
+    @abstractmethod
+    async def cancel_job(self, job_id: str) -> None:
+        """Aktif bir işi iptal eder."""
+        pass
+
+    @abstractmethod
+    async def start(self) -> None:
+        """Kuyruk worker'larını başlatır."""
+        pass
+
+    @abstractmethod
+    async def stop(self) -> None:
+        """Kuyruk worker'larını durdurur."""
+        pass

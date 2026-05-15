@@ -60,17 +60,19 @@ Domain katmanında tanımlanan soyut arayüzlerin (interfaces) gerçek dünya im
     - `SuryaOCREngine`: `IOCREngine` arayüzünü mevcut Surya OCR kütüphanesi (`engine/core.py`) üzerinden implemente eder.
 - **Infrastructure Exceptions:**
     - `InfrastructureException`: Altyapı seviyesindeki hataları (DB, Storage, OCR) temsil eder.
+- **Queue Adapter:**
+    - `AsyncProcessingQueue`: `ITaskQueue` arayüzünü implemente eder. `asyncio.Queue` kullanarak sayfaları arka planda paralel (max_concurrent) işler.
 
 ### [Aşama 3] Application Katmanı (Tamamlandı)
-Uygulamanın iş akışları (Use Case'ler) ve veri transfer objeleri (DTO'lar) dış dünya teknolojilerinden bağımsız olarak oluşturuldu. Sistemin eski tek sayfa (single-page) davranışı korundu.
+Uygulamanın iş akışları (Use Case'ler) ve veri transfer objeleri (DTO'lar) dış dünya teknolojilerinden bağımsız olarak oluşturuldu. Gerçek çoklu sayfa (multi-page) ve asenkron kuyruk desteği entegre edildi.
 
 #### Tamamlanan Dosyalar ve Tanımlar:
 - **DTOs (Data Transfer Objects):**
     - `DocumentDTO`, `PageDTO`: Domain entity'lerini API'ye sunmak için kullanılan Pydantic modelleri.
     - `ProcessDocumentRequest`: API'den gelecek basit istek modeli.
 - **Use Cases:**
-    - `UploadDocumentUseCase`: Dosya yükleme, `job_id` oluşturma, dosyayı kaydetme ve DB'ye başlangıç kaydını atma işlemlerini orkestre eder. Eski mimariyle uyumlu olması için sayfa sayısı `1` olarak sabitlendi.
-    - `ProcessDocumentUseCase`: Dokümanın işleme döngüsünü yönetir. `IOCREngine`'i çağırır, çıkan sonucu `.json` olarak saklar ve DB'deki statüleri günceller.
+    - `UploadDocumentUseCase`: Dosya yükleme, `job_id` oluşturma, gerçek sayfa sayısını tespit etme, sayfaları DB'ye kaydetme ve `ITaskQueue` üzerinden işleme döngüsünü başlatma işlemlerini orkestre eder.
+    - `ProcessPageUseCase`: Kuyruktan gelen tek bir sayfayı işlemeyi yönetir. PDF ise sayfayı resme çevirir, OCR motorunu çağırır, JSON sonuçlarını kaydeder ve durumu günceller.
     - `ListDocumentsUseCase`: Tüm dokümanları Repository üzerinden çekip DTO listesine çevirir.
     - `GetDocumentUseCase`: Belirli bir dokümanın detayını getirir.
     - `DeleteDocumentUseCase`: Fiziksel dosyaları (Storage) ve DB kayıtlarını (Repository) siler.
@@ -80,7 +82,7 @@ Uygulamanın iş akışları (Use Case'ler) ve veri transfer objeleri (DTO'lar) 
 
 ## 3. Gelecek Adımlar (Roadmap)
 
-1. **Asenkron Kuyruk (Task Queue) Entegrasyonu:** Domain katmanına `ITaskQueue` arayüzünün eklenmesi. Eski güçlü `queue_manager.py` altyapısının Infrastructure katmanına bir adaptör olarak taşınıp veritabanı bağımlılıklarından arındırılması.
-2. **Gerçek Çoklu Sayfa (Multi-Page) Desteği:** `UploadDocumentUseCase`'in PDF sayfa sayısını tekrar otomatik bulacak şekilde güncellenmesi ve her sayfa için kuyruğa iş atması. `ProcessDocumentUseCase` yerine sayfa bazlı çalışan `ProcessPageUseCase`'in yazılması. Böylece `preprocessor.extract_pdf_page` yardımıyla her sayfanın bağımsız ve paralel işlenebilmesi.
-3. **Eksik Use Case'lerin Tamamlanması:** Eski yapıda bulunan varolan dokümanları yeniden işleme özelliği (`process-existing`) için `ReprocessDocumentUseCase`'in yazılması.
-4. **API (Presentation) Katmanı ve DI:** Mevcut karmaşık FastAPI router'larının (`ocr.py`, `pdf.py`) tamamen silinip, yeni Use Case'lerin enjekte edileceği (Dependency Injection) temiz endpoint'lerin oluşturulması.
+1. **Reprocess Use Case:** Eski yapıda bulunan varolan dokümanları yeniden işleme özelliği (`process-existing`) için `ReprocessDocumentUseCase`'in yazılması.
+2. **API (Presentation) Katmanı ve DI:** Mevcut karmaşık FastAPI router'larının (`ocr.py`, `pdf.py`) tamamen silinip, yeni Use Case'lerin enjekte edileceği (Dependency Injection) temiz endpoint'lerin oluşturulması.
+3. **App Startup:** Uygulama başlatılırken `AsyncProcessingQueue` worker'larının start edilmesi.
+4. **Cleanup:** Yeni yapı tam entegre edildikten sonra eski `db_helpers.py`, `storage_manager.py` ve `queue_manager.py` gibi dosyaların temizlenmesi.

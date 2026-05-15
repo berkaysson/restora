@@ -13,3 +13,7 @@ class StorageException(InfrastructureException):
 class OCREngineException(InfrastructureException):
     """OCR motoru işlemleri sırasında oluşan hatalar."""
     pass
+
+class QueueException(InfrastructureException):
+    """Kuyruk işlemleri sırasında oluşan hatalar."""
+    pass
