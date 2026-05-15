@@ -92,3 +92,64 @@ class SqliteDocumentRepository(IDocumentRepository):
                 # ama garantiye almak için manuel de silinebilir.
         finally:
             conn.close()
+
+    def save_page(self, page) -> None:
+        """
+        Tek bir sayfanın tüm alanlarını UPSERT eder.
+        ProcessPageUseCase içindeki hot-path'te N+1 sorgu yerine 1 sorgu çalışır.
+        """
+        conn = get_db_connection()
+        try:
+            with conn:
+                layout_json = None
+                if page.layout_data:
+                    layout_json = json.dumps({
+                        "width": page.layout_data.width,
+                        "height": page.layout_data.height,
+                        "layout_blocks": page.layout_data.blocks,
+                        "text_lines": page.layout_data.lines,
+                    }, ensure_ascii=False)
+
+                ocr_text  = page.ocr_result.text            if page.ocr_result else None
+                confidence = page.ocr_result.confidence     if page.ocr_result else None
+                proc_time  = page.ocr_result.processing_time if page.ocr_result else None
+
+                conn.execute(
+                    """INSERT INTO processed_pages
+                       (document_id, page_number, status, image_path,
+                        ocr_text, layout_json, confidence_score, processing_time, error_message)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(document_id, page_number) DO UPDATE SET
+                           status            = excluded.status,
+                           image_path        = excluded.image_path,
+                           ocr_text          = excluded.ocr_text,
+                           layout_json       = excluded.layout_json,
+                           confidence_score  = excluded.confidence_score,
+                           processing_time   = excluded.processing_time,
+                           error_message     = excluded.error_message,
+                           updated_at        = CURRENT_TIMESTAMP""",
+                    (page.document_id, page.page_number, page.status.value, page.image_path,
+                     ocr_text, layout_json, confidence, proc_time, page.error_message),
+                )
+        finally:
+            conn.close()
+
+    def update_document_progress(self, job_id: str, processed_pages: int, status) -> None:
+        """
+        Sadece dokümanın processed_pages ve status alanlarını günceller.
+        1 UPDATE sorgusu — tüm sayfaları yeniden yazmaz.
+        """
+        conn = get_db_connection()
+        try:
+            with conn:
+                conn.execute(
+                    """UPDATE documents
+                       SET processed_pages = ?,
+                           status          = ?,
+                           updated_at      = CURRENT_TIMESTAMP
+                       WHERE id = ?""",
+                    (processed_pages, status.value, job_id),
+                )
+        finally:
+            conn.close()
+

@@ -76,13 +76,13 @@ Uygulamanın iş akışları (Use Case'ler) ve veri transfer objeleri (DTO'lar) 
     - `ListDocumentsUseCase`: Tüm dokümanları Repository üzerinden çekip DTO listesine çevirir.
     - `GetDocumentUseCase`: Belirli bir dokümanın detayını getirir.
     - `DeleteDocumentUseCase`: Fiziksel dosyaları (Storage) ve DB kayıtlarını (Repository) siler.
+    - `ReprocessDocumentUseCase`: Mevcut bir dokümanı sıfırdan yeniden işler. Dokümanı ve sayfaları `pending` durumuna sıfırlar, ardından `ITaskQueue` üzerinden tüm sayfaları yeniden kuyruğa ekler. Eski `POST /process-existing/{job_id}` endpoint mantığının Clean Architecture versiyonu.
 
 > [!NOTE]
 > Eski `app/utils.py` içinde bulunan `process_ocr_and_spellcheck` altındaki yazım denetimi (Spellcheck) mantığı, bu aşamada bilinçli olarak atlanmış olup ileride ayrı bir servis olarak tasarlanacaktır.
 
 ## 3. Gelecek Adımlar (Roadmap)
 
-1. **Reprocess Use Case:** Eski yapıda bulunan varolan dokümanları yeniden işleme özelliği (`process-existing`) için `ReprocessDocumentUseCase`'in yazılması.
-2. **API (Presentation) Katmanı ve DI:** Mevcut karmaşık FastAPI router'larının (`ocr.py`, `pdf.py`) tamamen silinip, yeni Use Case'lerin enjekte edileceği (Dependency Injection) temiz endpoint'lerin oluşturulması.
-3. **App Startup:** Uygulama başlatılırken `AsyncProcessingQueue` worker'larının start edilmesi.
-4. **Cleanup:** Yeni yapı tam entegre edildikten sonra eski `db_helpers.py`, `storage_manager.py` ve `queue_manager.py` gibi dosyaların temizlenmesi.
+1. **API (Presentation) Katmanı ve DI:** Mevcut karmaşık FastAPI router'larının (`ocr.py`, `pdf.py`) tamamen silinip, yeni Use Case'lerin enjekte edileceği (Dependency Injection) temiz endpoint'lerin oluşturulması.
+2. **App Startup:** Uygulama başlatılırken `AsyncProcessingQueue` worker'larının start edilmesi.
+3. **Cleanup:** Yeni yapı tam entegre edildikten sonra eski `db_helpers.py`, `storage_manager.py` ve `queue_manager.py` gibi dosyaların temizlenmesi.

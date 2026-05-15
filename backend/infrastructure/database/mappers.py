@@ -26,8 +26,10 @@ class DatabaseMapper:
                 layout_data = LayoutData(
                     width=data.get("width", 0),
                     height=data.get("height", 0),
-                    blocks=data.get("layout_blocks", []),
-                    lines=data.get("text_lines", [])
+                    # Hem yeni (blocks) hem eski (layout_blocks) anahtarını destekle
+                    blocks=data.get("blocks", data.get("layout_blocks", [])),
+                    # Hem yeni (lines) hem eski (text_lines) anahtarını destekle
+                    lines=data.get("lines", data.get("text_lines", []))
                 )
             except (json.JSONDecodeError, TypeError):
                 pass

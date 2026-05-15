@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 from domain.entities.document import Document
+from domain.entities.page import Page
+from domain.value_objects.document_status import DocumentStatus
 from domain.value_objects.ocr_result import OCRResult, LayoutData
 
 class IDocumentRepository(ABC):
@@ -18,6 +20,18 @@ class IDocumentRepository(ABC):
 
     @abstractmethod
     def delete(self, job_id: str) -> None:
+        pass
+
+    @abstractmethod
+    def save_page(self, page: Page) -> None:
+        """Tek bir sayfanın durumunu atomik olarak günceller (N+1 sorguyu önler)."""
+        pass
+
+    @abstractmethod
+    def update_document_progress(
+        self, job_id: str, processed_pages: int, status: DocumentStatus
+    ) -> None:
+        """Dokümanın processed_pages ve status alanını günceller (1 UPDATE sorgusu)."""
         pass
 
 class IFileStorage(ABC):
@@ -62,3 +76,10 @@ class ITaskQueue(ABC):
     async def stop(self) -> None:
         """Kuyruk worker'larını durdurur."""
         pass
+
+class INotificationService(ABC):
+    @abstractmethod
+    async def broadcast(self, job_id: str, data: dict) -> None:
+        """Tüm bağlı istemcilere veya belirli bir job_id grubuna bildirim gönderir."""
+        pass
+
