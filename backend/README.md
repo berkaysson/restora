@@ -40,8 +40,7 @@ backend/
 │   └── interfaces/         # Soyut Portlar (Repository, Storage, OCR Engine vb.)
 ├── application/            # 2. Uygulama Mantığı (Use Cases)
 │   ├── use_cases/          # İş Akışları (Upload, Process, Delete vb.)
-│   ├── dto/                # Data Transfer Objects (Pydantic modelleri)
-│   └── interfaces/         # Uygulama düzeyindeki soyutlamalar
+│   └── dto/                # Data Transfer Objects (Pydantic modelleri)
 ├── infrastructure/         # 3. Dış Dünya Adaptörleri (Adapters)
 │   ├── database/           # SQLite repository implementasyonu ve mappers
 │   ├── storage/            # Yerel dosya depolama yönetimi

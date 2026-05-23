@@ -5,9 +5,9 @@ from domain.interfaces import ITaskQueue
 from infrastructure.exceptions import QueueException
 from logger import log_manager
 
+
 class AsyncProcessingQueue(ITaskQueue):
     """
-    Eski queue_manager.py'deki ProcessingQueue sınıfının Clean Architecture uyumlu versiyonu.
     ITaskQueue arayüzünü implemente eder. Sayfa işleme sorumluluğunu
     dışarıdan enjekte edilen bir 'page_processor' callback'ine devreder,
     böylece Infrastructure katmanı Application katmanına bağımlı olmaz.
@@ -16,7 +16,7 @@ class AsyncProcessingQueue(ITaskQueue):
     def __init__(
         self,
         page_processor: Callable[[str, int, str], Awaitable[None]],
-        max_concurrent: int = 2
+        max_concurrent: int = 2,
     ):
         """
         Args:
@@ -49,7 +49,9 @@ class AsyncProcessingQueue(ITaskQueue):
         """Aktif bir işi iptal eder. Kuyrukta bekleyen sayfalar atlanır."""
         if job_id in self.active_jobs:
             self.active_jobs[job_id]["cancelled"] = True
-            await log_manager.log(f"Queue: Job {job_id} marked for cancellation", "backend")
+            await log_manager.log(
+                f"Queue: Job {job_id} marked for cancellation", "backend"
+            )
 
     async def start(self) -> None:
         """Kuyruk worker'larını başlatır."""
@@ -58,8 +60,7 @@ class AsyncProcessingQueue(ITaskQueue):
             f"Queue: Starting {self.max_concurrent} concurrent workers", "backend"
         )
         self._worker_tasks = [
-            asyncio.create_task(self._worker(i))
-            for i in range(self.max_concurrent)
+            asyncio.create_task(self._worker(i)) for i in range(self.max_concurrent)
         ]
 
     async def stop(self) -> None:
@@ -84,14 +85,14 @@ class AsyncProcessingQueue(ITaskQueue):
                 if self.active_jobs.get(job_id, {}).get("cancelled"):
                     await log_manager.log(
                         f"Queue: Skipping page {page_number} of cancelled job {job_id}",
-                        "backend"
+                        "backend",
                     )
                     self.queue.task_done()
                     continue
 
                 await log_manager.log(
                     f"Queue: Worker {worker_id} processing page {page_number} of job {job_id}",
-                    "backend"
+                    "backend",
                 )
 
                 # Sayfa işlemeyi Application katmanına devret

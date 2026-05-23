@@ -8,7 +8,6 @@ from api.router import api_router
 
 app = FastAPI()
 
-# React (Localhost:5173) erişimi için izin
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -45,11 +44,10 @@ async def log_requests(request: Request, call_next):
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup."""
-    await log_manager.log(
-        "FastAPI: Application starting...", "backend"
-    )
+    await log_manager.log("FastAPI: Application starting...", "backend")
 
     from api.dependencies import get_task_queue
+
     new_queue = get_task_queue()
     await new_queue.start()
 
@@ -77,5 +75,6 @@ async def shutdown_event():
     await log_manager.log("FastAPI: Application shutting down...", "backend")
 
     from api.dependencies import get_task_queue
+
     new_queue = get_task_queue()
     await new_queue.stop()

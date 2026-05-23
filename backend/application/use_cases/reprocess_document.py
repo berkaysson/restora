@@ -13,20 +13,13 @@ class ReprocessDocumentUseCase:
     """
     Mevcut bir dokümanı yeniden işleme iş akışını yönetir.
 
-    Eski `POST /process-existing/{job_id}` endpoint mantığının
-    Clean Architecture versiyonu.
-
     Akış:
       1. Dokümanı Repository'den çek (bulunamazsa hata fırlat).
-      2. Her sayfa için diskte OCR JSON dosyası var mı kontrol et:
+      2. Her sayfa için diskte yeni formatta OCR JSON dosyası var mı kontrol et:
          - Varsa → JSON'u okuyup DB'yi anında güncelle (Hızlı Yol, OCR çalışmaz).
          - Yoksa → Sayfayı ITaskQueue'ya ekle (OCR kuyruğu).
       3. Güncellenmiş entity'i kaydet.
       4. Sadece eksik sayfaları kuyruğa ekle.
-
-    Desteklenen JSON formatları (geriye dönük uyumlu):
-      - Eski: pages/page_001_ocr.json  (layout key'leri: layout_blocks, text_lines)
-      - Yeni: pages/page_001_ocr.json  (layout key'leri: blocks, lines)
     """
 
     def __init__(
@@ -76,23 +69,12 @@ class ReprocessDocumentUseCase:
         document.processed_pages = 0  # Sayacı sıfırla, aşağıda yeniden hesaplanacak
 
         for page in document.pages:
-            # Eski ve yeni format yollarını dene
-            # Yeni format (ProcessPageUseCase üretimi): pages/page_001_ocr.json
-            new_ocr_path = os.path.join(job_dir, "pages", f"page_{page.page_number:03d}_ocr.json")
-            # Eski format (orijinal storage_manager üretimi): pages/page_001_ocr.json
-            # (İkisi aynı konumda; eski sistem de aynı yapıyı kullanıyor)
-            # Ek olarak "results_page_N.json" formatını da dene (geçiş dönemi kaydı)
-            legacy_flat_path = os.path.join(job_dir, f"results_page_{page.page_number}.json")
+            # Sadece yeni yapıyla uyumlu pages/page_001_ocr.json formatını kontrol et
+            ocr_path = os.path.join(job_dir, "pages", f"page_{page.page_number:03d}_ocr.json")
 
-            found_json = None
-            if os.path.exists(new_ocr_path):
-                found_json = new_ocr_path
-            elif os.path.exists(legacy_flat_path):
-                found_json = legacy_flat_path
-
-            if found_json:
+            if os.path.exists(ocr_path):
                 try:
-                    ocr_result, layout_data = self._load_ocr_json(found_json)
+                    ocr_result, layout_data = self._load_ocr_json(ocr_path)
 
                     # Resim dosyası yolunu bul (pages/page_001.png)
                     img_path = os.path.join(job_dir, "pages", f"page_{page.page_number:03d}.png")
@@ -102,7 +84,7 @@ class ReprocessDocumentUseCase:
                     document.processed_pages += 1
 
                     await log_manager.log(
-                        f"Reprocess: Page {page.page_number} recovered from {os.path.basename(found_json)}.",
+                        f"Reprocess: Page {page.page_number} recovered from {os.path.basename(ocr_path)}.",
                         "backend",
                     )
                 except Exception as e:
@@ -152,7 +134,7 @@ class ReprocessDocumentUseCase:
     def _load_ocr_json(self, json_path: str):
         """
         OCR JSON dosyasını okuyup (OCRResult, LayoutData) döner.
-        Hem eski (layout_blocks / text_lines) hem yeni (blocks / lines) key'leri destekler.
+        Sadece yeni (blocks / lines) key'lerini destekler.
         """
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -167,10 +149,8 @@ class ReprocessDocumentUseCase:
         layout_data = LayoutData(
             width=layout_raw.get("width", 0),
             height=layout_raw.get("height", 0),
-            # Hem eski (layout_blocks) hem yeni (blocks) key'ini destekle
-            blocks=layout_raw.get("blocks", layout_raw.get("layout_blocks", [])),
-            # Hem eski (text_lines) hem yeni (lines) key'ini destekle
-            lines=layout_raw.get("lines", layout_raw.get("text_lines", [])),
+            blocks=layout_raw.get("blocks", []),
+            lines=layout_raw.get("lines", []),
         )
 
         return ocr_result, layout_data
