@@ -4,6 +4,8 @@ import { X, Trash2, FileText, Calendar } from "lucide-react";
 
 import type { UploadJob } from "../types";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 interface FileListProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,8 +29,17 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:8000/list-uploads");
-      setJobs(res.data.jobs);
+      const res = await axios.get(`${BASE_URL}/api/v2/ocr/list-uploads`);
+      const mappedJobs: UploadJob[] = res.data.map((doc: any) => ({
+        id: doc.id,
+        upload_date: new Date(doc.created_at).toLocaleString("tr-TR"),
+        original_file: doc.file_path,
+        processed_files: doc.pages?.map((p: any) => p.image_path).filter(Boolean) || [],
+        filename: doc.filename,
+        total_pages: doc.total_pages,
+        type: doc.total_pages > 1 ? "pdf" : "single_page",
+      }));
+      setJobs(mappedJobs);
     } catch (error) {
       console.error("Error fetching files:", error);
     } finally {
@@ -55,7 +66,7 @@ export function FileList({ isOpen, onClose, onSelect }: FileListProps) {
   };
 
   const deleteJobApi = async (jobId: string) => {
-    await axios.delete(`http://localhost:8000/delete-upload/${jobId}`);
+    await axios.delete(`${BASE_URL}/api/v2/ocr/delete-upload/${jobId}`);
   };
 
   const handleDelete = async (jobId: string) => {

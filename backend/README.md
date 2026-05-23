@@ -1,139 +1,116 @@
-# Restora Backend
+# Restora Backend: Clean Architecture & DDD
 
-This is the backend for the **Restora** project, a FastAPI-based application that processes PDF/Image pages, performs OCR using Surya OCR, and manages data using SQLite.
+Restora, çok sayfalı PDF ve resim belgeleri üzerinde yüksek doğruluklu metin tanıma (OCR) ve sayfa mizanpaj analizi (Layout Analysis) gerçekleştiren, arka planda asenkron kuyruk yapısı barındıran ve anlık durum güncellemelerini WebSocket üzerinden istemcilere ileten modern bir backend uygulamasıdır.
 
-## Features
+Bu proje, **Domain-Driven Design (DDD)** ve **Clean Architecture (Temiz Mimari)** prensipleri doğrultusunda tamamen yeniden yapılandırılmıştır.
 
-- **FastAPI Framework**: High-performance API.
-- **OCR Engine**: Uses [Surya OCR](https://github.com/VikParuchuri/surya) for accurate text recognition and layout analysis.
-- **Image Pre-processing**: Handles PDF to image conversion and preparation.
-- **Database**: SQLite for simple and efficient data storage.
-- **Static File Serving**: Serves processed images directly.
+---
 
-## Prerequisites
+## 🚀 Öne Çıkan Özellikler
 
-- Python 3.9+ (Recommended)
-- CUDA-compatible GPU (Optional, but recommended for faster OCR, see [engine/README.md](engine/README.md))
+- **Çoklu Sayfa Desteği & Asenkron Kuyruk:** Yüklenen PDF veya resim dosyaları arka planda asyncio tabanlı bir kuyruk sistemi (`AsyncProcessingQueue`) ile paralel ve sıralı olarak sayfa bazında işlenir.
+- **Gerçek Zamanlı Durum Bildirimi:** Her bir sayfanın işleme durumu (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`) anlık olarak WebSocket (`/api/v2/ws/progress/{job_id}`) üzerinden frontend uygulamasına iletilir.
+- **Canlı Sistem Logları:** Sunucu tarafında üretilen tüm sistem logları anlık olarak `/api/v2/ws/logs` WebSocket kanalı üzerinden frontend izleme paneline akıtılır.
+- **Surya OCR Entegrasyonu:** Mizanpaj analizi ve yüksek kaliteli metin okuma süreçleri Surya OCR kütüphanesi yardımıyla yerel olarak yürütülür.
+- **Temiz ve Modüler Altyapı:** İş mantığı, dış bileşenlerden (FastAPI, SQLite, Surya vb.) tamamen izole edilmiştir.
 
-## Installation
+---
 
-1.  **Navigate to the backend directory:**
+## 🛠️ Teknoloji Yığını
 
-    ```bash
-    cd backend
-    ```
+*   **Çekirdek:** Python 3.10+
+*   **Web Framework:** [FastAPI](https://fastapi.tiangolo.com/) & Uvicorn
+*   **Veritabanı:** SQLite & `sqlite3` (Optimize edilmiş yerel veri tabanı)
+*   **OCR & Layout:** Surya OCR
+*   **Eşzamansız Görevler:** Python standard `asyncio.Queue`
+*   **Real-time:** WebSockets
 
-2.  **Create a virtual environment:**
+---
 
-    ```bash
-    python -m venv venv
-    ```
+## 📁 Mimari Katmanlar ve Klasör Yapısı
 
-3.  **Activate the virtual environment:**
-    - Windows:
-      ```bash
-      venv\Scripts\activate
-      ```
-    - macOS/Linux:
-      ```bash
-      source venv/bin/activate
-      ```
+Proje, bağımlılıkların her zaman iç halkaya (Domain) doğru aktığı Clean Architecture yapısına sahiptir:
 
-4.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    _Note: This will install `fastapi`, `uvicorn`, `surya-ocr`, `opencv-python`, etc._
-
-## Running the Application
-
-Start the server using Uvicorn with hot-reload enabled:
-
-```bash
-uvicorn app:app --reload
+```text
+backend/
+├── domain/                 # 1. Çekirdek İş Mantığı (Core Domain)
+│   ├── entities/           # Document, Page entity'leri
+│   ├── value_objects/      # Değişmez kavramlar (Durumlar, OCRResult vb.)
+│   ├── exceptions/         # Domain katmanına özel iş mantığı hataları
+│   └── interfaces/         # Soyut Portlar (Repository, Storage, OCR Engine vb.)
+├── application/            # 2. Uygulama Mantığı (Use Cases)
+│   ├── use_cases/          # İş Akışları (Upload, Process, Delete vb.)
+│   ├── dto/                # Data Transfer Objects (Pydantic modelleri)
+│   └── interfaces/         # Uygulama düzeyindeki soyutlamalar
+├── infrastructure/         # 3. Dış Dünya Adaptörleri (Adapters)
+│   ├── database/           # SQLite repository implementasyonu ve mappers
+│   ├── storage/            # Yerel dosya depolama yönetimi
+│   ├── ocr/                # Surya OCR entegrasyon sınıfı
+│   ├── queue/              # Asenkron worker kuyruk sistemi
+│   └── notifications/      # WebSocket tabanlı anlık bildirim servisi
+├── api/                    # 4. Sunum Katmanı (FastAPI Presentation)
+│   ├── routers/            # Endpoint yönlendiricileri (ocr, documents, logs, websocket)
+│   ├── dependencies.py     # Bağımlılık Enjeksiyonu (DI) merkezi
+│   └── router.py           # Birleştirilmiş ana yönlendirici
+├── database.py             # SQLite tablo şemaları ve bağlantı yönetimi
+├── logger.py               # WebSocket destekli log yöneticisi (LogManager)
+└── main.py                 # FastAPI uygulaması başlangıç ve kapatma olayları
 ```
 
-The API will be available at: [http://localhost:8000](http://localhost:8000)
+---
 
-## API Documentation
+## ⚙️ Kurulum ve Çalıştırma
 
-FastAPI provides automatic interactive documentation:
+### 1. Gereksinimler
+Sisteminizde **Python 3.10** veya daha yeni bir sürümün kurulu olduğundan emin olun.
 
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+### 2. Sanal Ortam Oluşturma ve Aktifleştirme
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
 
-## Multi-Page PDF Processing
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
+```
 
-The backend now supports asynchronous processing of large multi-page PDF documents. This system uses a job queue and worker architecture to handle long-running OCR tasks without blocking the API.
+### 3. Bağımlılıkların Yüklenmesi
+```bash
+pip install -r requirements.txt
+```
 
-### Architecture
+### 4. Uygulamanın Başlatılması
+```bash
+uvicorn main:app --reload
+```
+Uygulama varsayılan olarak **http://localhost:8000** adresinde çalışmaya başlayacaktır.
 
-- **Queue Manager**: Manages asynchronous processing jobs and workers.
-- **Storage Manager**: Handles hierarchical file storage for jobs, pages, and assets.
-- **WebSockets**: Provides real-time progress updates to the frontend.
+---
 
-### New API Endpoints
+## 📡 API Uç Noktaları (Endpoints)
 
-#### Document Management
+Tüm yeni API uç noktaları `/api/v2` ön eki ile sunulmaktadır:
 
-- **`POST /upload-pdf`**: Upload a multi-page PDF. Returns a `job_id`.
-- **`GET /documents`**: List all document processing jobs.
-- **`DELETE /document/{job_id}`**: Delete a document and all associated data.
-- **`POST /document/{job_id}/cancel`**: Cancel an ongoing processing job.
-- **`POST /document/{job_id}/retry-failed`**: Retry processing for failed pages.
+### Doküman Yönetim API'leri
+- `POST /api/v2/ocr/upload` - Çok sayfalı belge yükleme ve asenkron OCR kuyruğunu tetikleme.
+- `GET /api/v2/ocr/list-uploads` - Yüklenen ve işlenmekte olan tüm işlerin listesi.
+- `DELETE /api/v2/ocr/delete-upload/{job_id}` - Fiziksel dosyalar ve veritabanı kayıtları dahil olmak üzere bir işi silme.
+- `POST /api/v2/ocr/process-existing/{job_id}` - Mevcut bir belgeyi sıfırlayıp kuyruğa yeniden ekleme.
 
-#### Progress & Status
+### Veri ve Sorgu API'leri
+- `GET /api/v2/documents` - Tüm işlenmiş dokümanların listesi.
+- `GET /api/v2/documents/{job_id}` - Belirli bir dokümanın tüm detayları ve durum bilgisi.
+- `GET /api/v2/documents/{job_id}/pages` - Dokümana ait tüm sayfaların detayları (OCR metinleri ve mizanpaj koordinatları dahil).
 
-- **`GET /document/{job_id}/status`**: Get overall processing status and progress.
+### WebSocket Bağlantıları
+- `WS /api/v2/ws/progress/{job_id}` - Belirli bir dokümanın sayfa sayfa işleme ilerlemesini anlık takip etme.
+- `WS /api/v2/ws/logs` - Tüm sistem ve sunucu loglarını canlı olarak dinleme.
 
-#### Page Data
+---
 
-- **`GET /document/{job_id}/pages`**: Get a paginated list of pages with their status.
-- **`GET /document/{job_id}/page/{page_number}`**: Get OCR data (text, layout) for a specific page.
+## 🧪 Birim Testleri ve Geliştirme
 
-#### Export
+Clean Architecture yapısı sayesinde uygulamanın tüm use case'leri (iş akışları) sahte adaptörler (Mock/Fake Repository, Mock Storage) kullanılarak veritabanı bağlantısı veya Surya OCR kütüphanesine ihtiyaç duyulmadan saniyeler içerisinde test edilebilir.
 
-- **`GET /document/{job_id}/export?format={pdf|txt|json}`**: Export the processed document.
-
-## Legacy Single-File Endpoints
-
-### `POST /upload`
-
-Uploads a PDF page (as an image) or an image file for processing.
-
-- **Request**: `multipart/form-data` with a file field named `file`.
-- **Process**:
-  1.  Saves the raw file to `uploads/`.
-  2.  Converts PDF to image if necessary.
-  3.  Runs Surya OCR to detect text and layout.
-  4.  Returns the extracted text and layout JSON.
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "image_path": "uploads/filename.jpg",
-    "text": "Extracted text content...",
-    "layout": { ... }
-  }
-  ```
-
-## Project Structure
-
-- `app.py`: Entry point wrapper to run the application.
-- `app/`: Contains the core application logic.
-  - `main.py`: FastAPI app initialization, middleware, and startup events.
-  - `routers/`: Directory for API route modules (e.g., `ocr.py`, `logs.py`).
-  - `utils.py`: Utility helper functions.
-- `database.py`: SQLite database initialization and connection handling.
-- `engine/`: **Core OCR and Processing Engine**. Contains the logic for modifying files, running models, and extracting data. See [engine/README.md](engine/README.md) for detailed documentation.
-- `ocr_engine.py`: Wrapper entry point for the engine module.
-- `logger.py`: System logging manager.
-- `queue_manager.py`: Handles asynchronous job processing and workers.
-- `storage_manager.py`: Manages file storage organization.
-- `uploads/`: Directory where uploaded and processed files are stored.
-- `restora.db`: SQLite database file (generated on startup).
-
-## Notes
-
-- **First Run**: The OCR models (Surya) will be downloaded on the first run. This might take some time and bandwidth.
-- **GPU Usage**: The code attempts to load models onto the GPU if available. If not, it may fall back to CPU or fail depending on your PyTorch installation.
+Yeni bir servis, OCR kütüphanesi veya veritabanı altyapısı entegre etmek için sadece `domain/interfaces` altında tanımlanan soyut arayüzü implemente etmeniz ve bunu `api/dependencies.py` üzerinden sisteme enjekte etmeniz yeterlidir.

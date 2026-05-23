@@ -131,8 +131,12 @@ class ProcessPageUseCase:
             # OCR JSON'unu pages/ alt klasörüne kaydet (eski yapı ile uyumlu)
             self.storage.save_json(job_id, f"pages/page_{page_number:03d}_ocr.json", result_data)
 
-            # 6. Sayfa Entity'sini güncelle (kalıcı resim yolu ile)
-            page.mark_as_completed(page_image_path, ocr_result, layout_data)
+            # 6. Sayfa Entity'sini güncelle
+            # DB'de mutlak yol değil, frontend'in kullanabileceği relative URL yolu sakla
+            # Frontend: ${BASE_URL}/${image_path} → http://localhost:8000/uploads/job/pages/page_001.png
+            relative_image_path = f"uploads/{job_id}/pages/page_{page_number:03d}.png"
+
+            page.mark_as_completed(relative_image_path, ocr_result, layout_data)
             document.processed_pages += 1
 
             # 7. Doküman tamamlandı mı kontrol et

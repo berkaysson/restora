@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 import os, time
 from database import init_db
 from logger import log_manager
-from app.routers import ocr, logs, pdf, websocket
 from api.router import api_router
 
 app = FastAPI()
@@ -19,8 +18,7 @@ app.add_middleware(
 
 
 # Resimleri frontend'e sunmak için statik yol
-# Ensure 'uploads' directory exists in the project root
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 
 if not os.path.exists(UPLOAD_DIR):
@@ -45,19 +43,12 @@ async def log_requests(request: Request, call_next):
 
 # Startup and Shutdown Events
 @app.on_event("startup")
-async def startup_event():  # Renamed from startup
+async def startup_event():
     """Initialize application on startup."""
     await log_manager.log(
         "FastAPI: Application starting...", "backend"
-    )  # Changed log message
+    )
 
-    # Start processing queue
-    from queue_manager import processing_queue
-    import asyncio
-
-    asyncio.create_task(processing_queue.start_processing())
-
-    # Start new clean architecture queue
     from api.dependencies import get_task_queue
     new_queue = get_task_queue()
     await new_queue.start()
@@ -77,12 +68,6 @@ async def startup_event():  # Renamed from startup
 
 
 # Register API Routers
-app.include_router(ocr.router, tags=["OCR (Legacy)"])
-app.include_router(logs.router, tags=["Logs"])
-app.include_router(pdf.router, tags=["PDF Processing"])
-app.include_router(websocket.router, tags=["Real-time Updates"])
-
-# New Clean Architecture API
 app.include_router(api_router, prefix="/api/v2")
 
 
@@ -91,12 +76,6 @@ async def shutdown_event():
     """Clean up on shutdown."""
     await log_manager.log("FastAPI: Application shutting down...", "backend")
 
-    # Stop processing queue
-    from queue_manager import processing_queue
-
-    await processing_queue.stop_processing()
-
-    # Stop new clean architecture queue
     from api.dependencies import get_task_queue
     new_queue = get_task_queue()
     await new_queue.stop()

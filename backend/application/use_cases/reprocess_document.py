@@ -96,7 +96,7 @@ class ReprocessDocumentUseCase:
 
                     # Resim dosyası yolunu bul (pages/page_001.png)
                     img_path = os.path.join(job_dir, "pages", f"page_{page.page_number:03d}.png")
-                    final_img_path = img_path if os.path.exists(img_path) else ""
+                    final_img_path = f"uploads/{job_id}/pages/page_{page.page_number:03d}.png" if os.path.exists(img_path) else ""
 
                     page.mark_as_completed(final_img_path, ocr_result, layout_data)
                     document.processed_pages += 1
@@ -147,7 +147,7 @@ class ReprocessDocumentUseCase:
         for page in pages_to_enqueue:
             await self.task_queue.enqueue_page(job_id, page.page_number, document.file_path)
 
-        return DocumentDTO.model_validate(document)
+        return DocumentDTO.from_document(document)
 
     def _load_ocr_json(self, json_path: str):
         """

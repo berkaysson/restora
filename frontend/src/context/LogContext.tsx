@@ -10,6 +10,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 /** Source of a log entry */
 export type LogSource = "frontend" | "backend" | "system";
 
@@ -78,7 +80,7 @@ export const LogProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Connect to WebSocket
-    const socket = new WebSocket("ws://localhost:8000/ws/logs");
+    const socket = new WebSocket(`${BASE_URL.replace(/^http/, "ws")}/api/v2/ws/logs`);
 
     socket.onopen = () => {
       addLog("Connected to Backend WebSocket", "system");

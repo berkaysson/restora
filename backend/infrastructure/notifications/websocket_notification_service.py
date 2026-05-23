@@ -1,5 +1,5 @@
 from domain.interfaces import INotificationService
-from app.routers.websocket import connection_manager
+from api.routers.websocket import connection_manager
 
 class WebSocketNotificationService(INotificationService):
     """

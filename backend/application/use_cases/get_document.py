@@ -12,5 +12,5 @@ class GetDocumentUseCase:
         document = self.repository.get_by_id(job_id)
         if not document:
             return None
-        
-        return DocumentDTO.model_validate(document)
+
+        return DocumentDTO.from_document(document)

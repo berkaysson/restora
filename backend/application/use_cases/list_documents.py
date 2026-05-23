@@ -10,4 +10,4 @@ class ListDocumentsUseCase:
 
     async def execute(self) -> List[DocumentDTO]:
         documents = self.repository.list_all()
-        return [DocumentDTO.model_validate(doc) for doc in documents]
+        return [DocumentDTO.from_document(doc) for doc in documents]

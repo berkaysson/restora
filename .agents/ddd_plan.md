@@ -1,91 +1,85 @@
-# Restora Projesi: Clean Architecture ve DDD Geçiş Planı
+# Restora Projesi: Clean Architecture ve DDD Geçiş Planı (Tamamlandı)
 
-Restora projesinin mevcut backend yapısını inceledim. Şu anda proje, iş mantığı (business logic), veri erişimi (database/storage) ve sunum (FastAPI router'ları) katmanlarının birbirine sıkı sıkıya bağlı olduğu (tightly coupled) bir yapıya sahip. Örneğin, `app/routers/ocr.py` dosyası doğrudan dosya sistemine yazma işlemi yapıyor, iş mantığını çalıştırıyor ve veritabanı yardımcı sınıflarını (veya storage manager'ı) doğrudan çağırıyor. 
+Restora projesinin backend mimarisini Clean Architecture (Temiz Mimari) ve Domain-Driven Design (DDD) prensiplerine göre yapılandırma süreci **başarıyla tamamlanmıştır**. Eski monolitik ve sıkı sıkıya bağlı (tightly-coupled) yapı tamamen temizlenmiş, test edilebilir, esnek ve modüler bir mimari kurulmuştur.
 
-Clean Architecture (Temiz Mimari) ve Domain-Driven Design (DDD) prensiplerine geçiş yaparak projeyi test edilebilir, bakımı kolay ve ölçeklenebilir hale getireceğiz.
-
-İşte bu geçişi adım adım ve güvenli bir şekilde sağlamak için detaylı plan:
+Aşağıda bu geçiş sürecinde tamamlanan adımlar, taşınan/silinen dosyalar ve ulaşılan son durum özetlenmiştir.
 
 ---
 
-## 1. Hedef Klasör Yapısı (Target Directory Structure)
+## 1. Planlanan vs. Gerçekleşen Klasör Yapısı
 
-Proje kök dizininde veya `backend/` altında şu katmanlı yapıyı oluşturacağız:
+Planlandığı üzere, tüm backend sistemi şu katmanlı yapıya kavuşturulmuştur:
 
 ```text
 backend/
-├── domain/                 # Core iş mantığı ve kurallar (Bağımlılık YOK)
-│   ├── entities/           # Document, Page, Job gibi DDD entity'leri
-│   ├── value_objects/      # JobId, OCRConfidence gibi değişmez (immutable) objeler
-│   ├── exceptions/         # Domain spesifik hatalar (ör. DocumentNotFoundError)
-│   └── interfaces/         # Repository, Storage ve OCR Engine arayüzleri (Abstract Base Classes)
-├── application/            # Use Case'ler (Uygulama iş akışları)
-│   ├── use_cases/          # ProcessDocumentUseCase, UploadDocumentUseCase vb.
-│   ├── dto/                # Data Transfer Object'ler (Request/Response modelleri)
-│   └── interfaces/         # (Gerekirse) Application seviyesi arayüzler
-├── infrastructure/         # Dış dünya ile iletişim (Veritabanı, Dosya Sistemi, Harici API)
-│   ├── database/           # SQLite/SQLAlchemy Repository implementasyonları
-│   ├── storage/            # LocalFileStorage (storage_manager.py'nin yeni yeri)
-│   ├── ocr/                # Surya OCR entegrasyonu (engine/core.py adaptasyonu)
-│   └── queue/              # RabbitMQ/Redis veya mevcut async queue implementasyonu
-├── api/                    # Sunum Katmanı (Presentation)
-│   ├── routers/            # FastAPI endpoint'leri (Sadece Use Case çağırır)
-│   ├── dependencies.py     # Dependency Injection (DI) tanımlamaları
-│   └── schemas.py          # FastAPI Pydantic modelleri
-└── main.py                 # FastAPI uygulamasının başlatıldığı ve DI'ın bağlandığı yer
+├── domain/                 # Core iş mantığı ve kurallar (Harici bağımlılık barındırmaz)
+│   ├── entities/           # DDD Entity'leri (Document, Page)
+│   ├── value_objects/      # Değişmez nesneler (DocumentStatus, OCRResult, LayoutData)
+│   ├── exceptions/         # Domain katmanına özel hata sınıfları
+│   └── interfaces/         # Soyut Portlar (IDocumentRepository, IFileStorage, IOCREngine vb.)
+├── application/            # Use Case orkestrasyonu (İş akışları)
+│   ├── use_cases/          # İş mantığı akışları (Upload, Process, Reprocess vb.)
+│   ├── dto/                # Data Transfer Object'ler (Pydantic API modelleri)
+│   └── interfaces/         # Application seviyesindeki soyut arayüzler
+├── infrastructure/         # Dış dünya adaptörleri (Implementasyonlar)
+│   ├── database/           # SQLite veri tabanı deposu (SqliteDocumentRepository)
+│   ├── storage/            # Yerel dosya sistemi işlemleri (LocalFileStorage)
+│   ├── ocr/                # Surya OCR entegrasyonu (SuryaOCREngine)
+│   ├── queue/              # Çoklu sayfa işleme için asenkron kuyruk (AsyncProcessingQueue)
+│   └── notifications/      # Gerçek zamanlı WebSocket yayın servisi (WebSocketNotificationService)
+├── api/                    # Sunum ve API Katmanı (FastAPI)
+│   ├── routers/            # Endpoint yönlendiricileri (ocr, documents, logs, websocket)
+│   ├── dependencies.py     # Bağımlılık Enjeksiyonu (Dependency Injection) tanımları
+│   └── router.py           # Birleştirilmiş API yönlendiricisi
+├── legacy/                 # Eski mimariye ait arşivlenmiş kodlar (Güvenlik amaçlı saklananlar)
+└── main.py                 # FastAPI uygulamasının giriş ve DI yapılandırma noktası
 ```
 
 ---
 
-## 2. Aşama Aşama Geçiş Planı
+## 2. Aşama Aşama Tamamlanma Raporu
 
-### Aşama 1: Domain Katmanının İnşası (Core)
-Domain katmanı projenin kalbidir ve hiçbir dış kütüphaneye (FastAPI, SQLite, Surya vb.) bağımlı olmamalıdır. Sadece saf Python (`dataclasses`, `typing` vb.) kullanılmalıdır.
+### [Aşama 1] Domain Katmanı İnşası ── **TAMAMLANDI**
+*   **Entities:** `Document` (Aggregate Root) ve `Page` sınıfları Python `dataclasses` kullanılarak oluşturuldu.
+*   **Value Objects:** `DocumentStatus` (Enum), `OCRResult` ve `LayoutData` gibi değişmez domain kavramları tanımlandı.
+*   **Interfaces (Ports):** Veritabanı (`IDocumentRepository`), depolama (`IFileStorage`), OCR motoru (`IOCREngine`), görev kuyruğu (`ITaskQueue`) ve bildirimler (`INotificationService`) için soyut arayüz tanımları yapıldı.
 
-1.  **Entity'leri Tanımlayın:** 
-    *   `domain/entities/document.py` içine `Document` sınıfını oluşturun (`id`, `filename`, `total_pages`, `status` özelliklerini içermeli).
-    *   `domain/entities/page.py` içine `Page` sınıfını oluşturun.
-2.  **Interface (Port) Tanımlamaları:**
-    *   `domain/interfaces/document_repository.py`: Veritabanı işlemleri için soyut sınıf (Örn: `save_document`, `get_document_by_id`).
-    *   `domain/interfaces/file_storage.py`: Dosya kaydetme/okuma işlemleri için soyut sınıf.
-    *   `domain/interfaces/ocr_engine.py`: OCR motorunu soyutlayan arayüz (Örn: `process_image` metodu).
+### [Aşama 2] Infrastructure Katmanı Entegrasyonu ── **TAMAMLANDI**
+*   **Database Adapter:** Eski `db_helpers.py` sorguları modern bir yaklaşımla `SqliteDocumentRepository` içerisine uyarlandı. `DatabaseMapper` ile veritabanı satırları doğrudan domain entity nesnelerine dönüştürüldü.
+*   **Storage Adapter:** Yerel dosya sistemi işlemlerini gerçekleştiren `LocalFileStorage` yazılarak `IFileStorage` implementasyonu tamamlandı.
+*   **OCR Adapter:** Surya OCR kütüphanesini soyutlayan `SuryaOCREngine` implemente edildi.
+*   **Queue & Notification Adapters:** `AsyncProcessingQueue` (asyncio tabanlı asenkron kuyruk sistemi) ve `WebSocketNotificationService` (sayfa sayfa işleme ilerlemesini istemcilere bildiren servis) kodlandı.
 
-### Aşama 2: Infrastructure Katmanının Adaptasyonu (Adapters)
-Mevcut kodları, Domain katmanında tanımladığımız Interface'leri (Portları) implemente edecek şekilde Infrastructure katmanına taşıyıp saracağız (Wrapper/Adapter pattern).
+### [Aşama 3] Application Katmanı ve Use Case Tasarımı ── **TAMAMLANDI**
+*   Tüm iş mantığı, sunum katmanından tamamen arındırılarak Use Case sınıflarına taşındı:
+    *   `UploadDocumentUseCase`: Yeni dokümanların yüklenmesi ve kuyruğa eklenmesi.
+    *   `ProcessPageUseCase`: Her bir sayfanın bağımsız olarak PDF'ten resme çevrilip OCR motorundan geçirilmesi ve kaydedilmesi.
+    *   `ReprocessDocumentUseCase`: Mevcut bir dokümanın sıfırlanıp tekrar sırayla işleme alınması.
+    *   `GetDocumentUseCase`, `ListDocumentsUseCase` ve `DeleteDocumentUseCase` veri sorgu ve yönetim işlemleri.
 
-1.  **Database Adaptörü:** `db_helpers.py` dosyasındaki SQL sorgularını alıp `infrastructure/database/sqlite_document_repository.py` içinde, `IDocumentRepository` arayüzünü uygulayan bir sınıfa (`SqliteDocumentRepository`) taşıyın. *(İleride SQLAlchemy ORM'e geçmek isterseniz sadece bu dosyayı değiştireceksiniz).*
-2.  **Storage Adaptörü:** `storage_manager.py` kodlarını `infrastructure/storage/local_file_storage.py` içine taşıyıp `IFileStorage` arayüzünü uygulamasını sağlayın.
-3.  **OCR Adaptörü:** `engine/` dizinindeki kodları bir sınıfa (örn. `SuryaOCREngine`) sarın ve `IOCREngine` arayüzünü uygulayın.
-
-### Aşama 3: Application Katmanının Geliştirilmesi (Use Cases)
-Mevcut durumda router'lar (`app/routers/ocr.py`) ve `utils.py` içinde yer alan iş mantığını (örneğin dosya yükleme, OCR başlatma, JSON kaydetme akışını) Use Case sınıflarına taşıyacağız.
-
-1.  **UploadDocumentUseCase:**
-    *   *Girdi:* Dosya adı ve dosya içeriği (byte/stream).
-    *   *İşlem:* Storage arayüzünü kullanarak dosyayı kaydeder, Repository arayüzünü kullanarak Document entity'sini veritabanına 'pending' statüsünde kaydeder, Queue arayüzüne işi atar.
-    *   *Çıktı:* Oluşturulan Document'ın ID'si.
-2.  **ProcessDocumentUseCase:**
-    *   *Girdi:* Job ID (Document ID).
-    *   *İşlem:* Repository'den dokümanı çeker -> Status'u 'processing' yapar -> OCR arayüzünü çağırır -> Gelen sonucu Storage'a JSON olarak yazar -> Status'u 'completed' yapar ve Repository'de günceller.
-
-### Aşama 4: Presentation Katmanı (API & Routers) Düzenlemesi
-FastAPI router'ları artık sadece HTTP isteklerini alacak, parametreleri doğrulayacak ve ilgili Use Case'i çalıştıracaktır.
-
-1.  **Dependency Injection (DI) Kurulumu:** `api/dependencies.py` içinde Repository, Storage ve Use Case nesnelerini üreten FastAPI `Depends` fonksiyonları yazın.
-    *   *Örnek:* `def get_upload_use_case() -> UploadDocumentUseCase:`
-2.  **Router Refactoring:** `app/routers/ocr.py` dosyasındaki karmaşık mantığı silin. Yerine, enjekte edilen Use Case nesnesini çağırın.
-    *   *Örnek Akış:* `router.post("/upload")` -> Request'i al -> `use_case.execute(file)` -> Response dön.
+### [Aşama 4] API ve Bağımlılık Yönetimi (DI) ── **TAMAMLANDI**
+*   `api/dependencies.py` dosyasında FastAPI `Depends` yapısı kullanılarak tüm bağımlılıklar enjekte edilebilir hale getirildi.
+*   Tüm uç noktalar `/api/v2` sürüm ön eki ile sisteme entegre edildi.
+*   Canlı log izleme (`logs.py`) ve anlık sayfa ilerleme WebSocket sunucusu (`websocket.py`) v2 mimarisine taşınarak API katmanına dahil edildi.
 
 ---
 
-## 3. Güvenli Geçiş (Migration) Stratejisi
+## 3. Legacy (Eski) Yapının Temizlenmesi
 
-Bütün projeyi tek seferde silip baştan yazmak (**Big Bang Rewriting**) çok risklidir. Bunun yerine **Strangler Fig Pattern** (Boğucu İncir Deseni) uygulamalıyız:
+Mevcut durumda eski monolitik kod tabanı tamamen arındırılmıştır:
+1.  **Arşivleme:** Eski `db_helpers.py`, `storage_manager.py`, `queue_manager.py` ve `app/` klasörü içerisindeki tüm eski dosyalar koruma amacıyla `backend/legacy/` klasörü altına taşınmıştır.
+2.  **Ana Dizin Temizliği:** Ana backend dizininde yer alan tüm karmaşık utils ve helper dosyaları kaldırılarak sadece temiz mimariye hizmet eden `main.py`, `database.py` ve `logger.py` gibi temel bileşenler bırakılmıştır.
+3.  **FastAPI Uyumlaştırması:** `main.py` içerisindeki eski router referansları tamamen temizlenmiş ve tüm trafik yeni `/api/v2` yönlendiricisine aktarılmıştır.
 
-1.  **Önce Klasörleri Açın:** Yeni klasör yapısını (`domain/`, `application/` vb.) mevcut kodun yanına boş olarak açın.
-2.  **Aşağıdan Yukarıya Doğru İnşa Edin:** Önce sadece Domain entity'lerini ve Interface'leri yazın.
-3.  **Parça Parça Taşıyın:** Örneğin, sadece `GET /list-uploads` (listeleme) işlemini yeni mimariye geçirin. Router -> Use Case -> Repository (Interface) -> SqliteRepository (Implementation) zincirini bu tek endpoint için kurun ve test edin.
-4.  **En Karmaşık Yeri Sona Bırakın:** `POST /upload` ve asenkron OCR işleme (`process_ocr_and_spellcheck` ve queue yapısı) kısmı en karmaşık yerdir. Listeleme ve silme endpoint'leri yeni yapıya geçtikten sonra bu ana akışı Use Case'lere bölün.
-5.  **Eski Kodları Temizleyin:** Her şey yeni mimariye uyarlandıktan sonra eski `db_helpers.py`, `app/utils.py`, `storage_manager.py` gibi root dizindeki dosyaları güvenle silin.
+---
 
-Bu adımları onaylıyorsanız, ilk olarak **Aşama 1 (Domain Katmanı)** kodlarını yazmaya başlayabiliriz. Lütfen bana hangi adımdan başlamak istediğinizi bildirin.
+## 4. Frontend Geçiş Durumu
+
+Frontend tarafındaki entegrasyon **başarıyla tamamlanmıştır**:
+*   Frontend uygulaması eski endpoint'ler yerine tamamen `/api/v2` API uç noktalarını çağırmaktadır.
+*   Log izleme paneli, yeni nesil WebSocket bağlantısı olan `/api/v2/ws/logs` adresi üzerinden gerçek zamanlı logları dinlemektedir.
+*   Yüklenen veya yeniden işlenen belgelerin sayfa sayfa işleme aşamaları `/api/v2/ws/progress/{job_id}` WebSocket adresi üzerinden canlı olarak takip edilerek UI üzerinde anlık güncellenmektedir.
+*   API'den dönen yeni `DocumentDTO` ve `PageDTO` veri yapıları frontend modelleri ile tam uyumlu hale getirilmiştir.
+
+> [!NOTE]
+> Temiz mimariye geçişle birlikte, sistemin hata toleransı artırılmış, modüller arası sıkı bağlar çözülmüş ve gelecekte farklı bir OCR kütüphanesine veya SQLAlchemy ORM gibi farklı bir veritabanı altyapısına geçişin önü tamamen açılmıştır.

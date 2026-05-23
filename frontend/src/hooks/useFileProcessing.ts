@@ -16,6 +16,8 @@ import { useLogs } from "../context/LogContext";
 import { fixTurkishHyphens } from "../utils/textUtils";
 import type { PageData } from "../types";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 /**
  * Hook for handling file uploads and OCR processing.
  *
@@ -82,26 +84,31 @@ export function useFileProcessing() {
       try {
         setLoadingMessage("Tüm sayfalar indiriliyor...");
         const res = await axios.get(
-          `http://localhost:8000/document/${jobId}/all-pages`,
+          `${BASE_URL}/api/v2/documents/${jobId}/pages`,
         );
-        const { pages } = res.data;
+        const pages = res.data;
 
         // Parse layout and fix text for all pages
         const processedPages: PageData[] = pages.map((page: any) => {
-          const layout = page.ocr_data?.layout || { text_lines: [] };
-          const text = page.ocr_data?.text || "";
+          const text = page.ocr_result?.text || "";
+          const layoutRaw = page.layout_data || { lines: [], blocks: [] };
 
-          const parsedLayout = (typeof layout === "string"
-            ? JSON.parse(layout)
-            : layout) || { text_lines: [] };
+          const parsedLayout = {
+            width: layoutRaw.width || 0,
+            height: layoutRaw.height || 0,
+            text_lines: layoutRaw.lines || [],
+            layout_blocks: layoutRaw.blocks || [],
+          };
 
           const fixedText = fixTurkishHyphens(text);
 
           return {
-            ...page,
+            status: "success",
+            job_id: jobId,
             text: fixedText,
             layout: parsedLayout,
-            clean_image: page.image_path,
+            clean_image: page.image_path ? page.image_path.replace(/\\/g, '/') : "",
+            page_number: page.page_number,
           };
         });
 
@@ -195,69 +202,44 @@ export function useFileProcessing() {
       setCurrentPage(1);
       setSelectedIndex(null);
 
-      let progressInterval: ReturnType<typeof setInterval> | undefined;
-
-      const isPdf = file.type === "application/pdf";
-      const uploadUrl = isPdf
-        ? "http://localhost:8000/upload-pdf"
-        : "http://localhost:8000/upload";
-
       try {
-        addLog(
-          `Frontend: Sending POST ${isPdf ? "/upload-pdf" : "/upload"} request...`,
-          "frontend",
-        );
-        const res = await axios.post(uploadUrl, formData, {
+        addLog(`Frontend: Sending POST /api/v2/ocr/upload request...`, "frontend");
+        
+        const res = await axios.post(`${BASE_URL}/api/v2/ocr/upload`, formData, {
           onUploadProgress: (progressEvent) => {
             const total = progressEvent.total || 1;
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 30) / total,
+              (progressEvent.loaded * 30) / total
             );
-            // Only update progress for upload phase if not PDF (PDF progress handled by WS after upload)
-            if (!isPdf || percentCompleted < 100) {
-              setProgress(percentCompleted);
-            }
+            // Limit to 30% for raw upload phase
+            setProgress(percentCompleted);
           },
         });
 
-        if (isPdf) {
-          // Async flow
-          const jobId = res.data.job_id;
-          setLoadingMessage("AI Analizi yapılıyor (Çok Sayfalı)...");
-          addLog(
-            `Frontend: PDF Upload complete. Job ID: ${jobId}. Connecting to WS...`,
-            "frontend",
-          );
+        const doc = res.data;
+        const jobId = doc.id;
+        
+        setTotalPages(doc.total_pages);
+        setProcessedPages(doc.processed_pages);
+        
+        addLog(
+          `Frontend: Upload complete. Job ID: ${jobId}. Connecting to WS...`,
+          "frontend"
+        );
 
-          // Connect to Job-specific WebSocket
-          const wsUrl = `ws://localhost:8000/ws/progress/${jobId}`;
+        if (doc.status === "completed") {
+          addLog(`Frontend: Job ${jobId} already completed.`, "system");
+          setProgress(100);
+          await fetchAllPages(jobId);
+        } else {
+          setLoadingMessage("AI Analizi yapılıyor...");
+          
+          // Connect to progress WS
+          const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/api/v2/ws/progress/${jobId}`;
           const socket = new WebSocket(wsUrl);
 
-          socket.onopen = async () => {
-            addLog(
-              `Frontend: Connected to progress stream for ${jobId}`,
-              "system",
-            );
-
-            // Check status immediately in case we missed events due to race condition
-            try {
-              const statusRes = await axios.get(
-                `http://localhost:8000/document/${jobId}/status`,
-              );
-              const statusData = statusRes.data;
-
-              setProcessedPages(statusData.completed_pages);
-              setTotalPages(statusData.total_pages);
-              setProgress(statusData.progress_percentage);
-
-              if (statusData.status === "completed") {
-                addLog(`Frontend: Job ${jobId} already completed.`, "system");
-                socket.close();
-                fetchAllPages(jobId);
-              }
-            } catch (err) {
-              console.error("Error fetching initial status", err);
-            }
+          socket.onopen = () => {
+            addLog(`Frontend: Connected to progress stream for ${jobId}`, "system");
           };
 
           socket.onmessage = (event) => {
@@ -267,25 +249,31 @@ export function useFileProcessing() {
               if (data.event === "page_completed") {
                 setProcessedPages(data.processed_pages);
                 setTotalPages(data.total_pages);
-                setProgress(data.progress);
+                
+                // Calculate progress: 30% uploaded + remaining 70% scale
+                const workProgress = data.total_pages > 0 
+                  ? Math.round((data.processed_pages / data.total_pages) * 70) 
+                  : 0;
+                setProgress(30 + workProgress);
+                
                 addLog(
                   `Frontend: Page ${data.page_number}/${data.total_pages} processed`,
-                  "system",
+                  "system"
                 );
-              } else if (data.event === "job_completed") {
-                setProcessedPages(data.processed_pages);
-                setTotalPages(data.total_pages);
-                setProgress(100);
-                addLog(`Frontend: Job ${data.job_id} completed`, "system");
-                socket.close(); // Close on completion
 
-                setTimeout(() => {
-                  fetchAllPages(data.job_id);
-                }, 500);
+                if (data.status === "completed" || data.processed_pages === data.total_pages) {
+                  setProgress(100);
+                  addLog(`Frontend: Job ${jobId} completed`, "system");
+                  socket.close();
+
+                  setTimeout(() => {
+                    fetchAllPages(jobId);
+                  }, 500);
+                }
               } else if (data.event === "page_failed") {
                 addLog(
                   `Frontend: Page ${data.page_number} failed: ${data.error}`,
-                  "system",
+                  "system"
                 );
               }
             } catch (e) {
@@ -297,42 +285,14 @@ export function useFileProcessing() {
             console.error("WS Error", error);
             addLog(`Frontend: WebSocket error`, "system");
           };
-        } else {
-          // Sync flow (Image)
-          setLoadingMessage("AI Analizi yapılıyor...");
-          addLog(
-            `Frontend: Upload complete. Waiting for analysis...`,
-            "frontend",
-          );
-
-          setProgress(30);
-          progressInterval = setInterval(() => {
-            setProgress((prev) => {
-              if (prev >= 90) {
-                clearInterval(progressInterval);
-                return 90;
-              }
-              return prev + 1;
-            });
-          }, 500);
-
-          processResponse(res);
-          setProgress(100);
-          setLoading(false);
         }
       } catch (err) {
         console.error(err);
         addLog(`Frontend: Error during upload - ${err}`, "frontend");
         alert(
-          `Hata oluştu! ${err instanceof Error ? err.message : "Backend hatası"}`,
+          `Hata oluştu! ${err instanceof Error ? err.message : "Backend hatası"}`
         );
-      } finally {
-        if (progressInterval!) clearInterval(progressInterval);
-        // Loading state determines if overlay is shown.
-        // For PDF, we keep loading true until WS job_completed finishes fetching data.
-        if (!isPdf) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     },
     [
@@ -341,14 +301,13 @@ export function useFileProcessing() {
       setProgress,
       setLoadingMessage,
       addLog,
-      processResponse,
       setProcessedPages,
       setTotalPages,
       clearLogs,
       fetchAllPages,
       setCurrentPage,
       setSelectedIndex,
-    ],
+    ]
   );
 
   const handleOpenFile = useCallback(
@@ -368,45 +327,81 @@ export function useFileProcessing() {
       setLoadingMessage("Dosya açılıyor...");
       addLog(`Frontend: Opening existing job ${jobId}`, "frontend");
 
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) return 90;
-          return prev + 10;
-        });
-      }, 200);
-
       try {
+        // 1. Get current document status
         const statusRes = await axios.get(
-          `http://localhost:8000/document/${jobId}/status`,
+          `${BASE_URL}/api/v2/documents/${jobId}`,
         );
+        const doc = statusRes.data;
 
-        if (
-          statusRes.data.status === "completed" &&
-          statusRes.data.total_pages > 1
-        ) {
+        setProcessedPages(doc.processed_pages);
+        setTotalPages(doc.total_pages);
+        
+        if (doc.status === "completed") {
+          // If already completed, load all pages
           await fetchAllPages(jobId);
-          setIsOverlayOpen(false);
+          setProgress(100);
         } else {
-          const res = await axios.post(
-            `http://localhost:8000/process-existing/${jobId}`,
+          // If not completed, trigger reprocessing and listen via WebSocket progress
+          const reprocessRes = await axios.post(
+            `${BASE_URL}/api/v2/ocr/process-existing/${jobId}`,
           );
-          processResponse(res);
+          
+          if (reprocessRes.data.status === "completed") {
+            await fetchAllPages(jobId);
+            setProgress(100);
+          } else {
+            // Document is processing, open WS progress stream
+            setLoadingMessage("AI Analizi yapılıyor...");
+            const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/api/v2/ws/progress/${jobId}`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+              addLog(`Frontend: Connected to progress stream for ${jobId}`, "system");
+            };
+
+            socket.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data);
+
+                if (data.event === "page_completed") {
+                  setProcessedPages(data.processed_pages);
+                  setTotalPages(data.total_pages);
+                  setProgress(Math.round((data.processed_pages / data.total_pages) * 100));
+                  addLog(
+                    `Frontend: Page ${data.page_number}/${data.total_pages} processed`,
+                    "system",
+                  );
+
+                  if (data.status === "completed" || data.processed_pages === data.total_pages) {
+                    setProgress(100);
+                    addLog(`Frontend: Job completed`, "system");
+                    socket.close();
+                    setTimeout(() => {
+                      fetchAllPages(jobId);
+                    }, 500);
+                  }
+                } else if (data.event === "page_failed") {
+                  addLog(
+                    `Frontend: Page ${data.page_number} failed: ${data.error}`,
+                    "system",
+                  );
+                }
+              } catch (e) {
+                console.error("WS Parse Error", e);
+              }
+            };
+
+            socket.onerror = (error) => {
+              console.error("WS Error", error);
+              addLog(`Frontend: WebSocket error`, "system");
+            };
+          }
         }
-        setProgress(100);
       } catch (err) {
         console.error(err);
-        try {
-          const res = await axios.post(
-            `http://localhost:8000/process-existing/${jobId}`,
-          );
-          processResponse(res);
-          setProgress(100);
-        } catch (e) {
-          addLog(`Frontend: Error opening job - ${e}`, "frontend");
-          alert(`Hata: ${e instanceof Error ? e.message : "Unknown error"}`);
-        }
-      } finally {
-        clearInterval(progressInterval);
+        addLog(`Frontend: Error opening job - ${err}`, "frontend");
+        alert(`Hata: ${err instanceof Error ? err.message : "Bilinmeyen hata"}`);
         setLoading(false);
       }
     },
@@ -417,14 +412,13 @@ export function useFileProcessing() {
       setProgress,
       setLoadingMessage,
       addLog,
-      processResponse,
       clearLogs,
       setProcessedPages,
       setTotalPages,
       fetchAllPages,
       setCurrentPage,
       setSelectedIndex,
-    ],
+    ]
   );
 
   return { handleUpload, handleOpenFile, fetchAllPages };

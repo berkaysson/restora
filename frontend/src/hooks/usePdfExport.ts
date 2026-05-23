@@ -18,6 +18,8 @@ import {
   calculateMedianLineHeight,
 } from "./useTextLayout";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 /**
  * Hook for exporting OCR results as searchable PDF documents.
  */
@@ -41,16 +43,16 @@ export function usePdfExport() {
   const getPagesToExport = useCallback(
     (startPage?: number, endPage?: number, includeChanges: boolean = true) => {
       const sourcePages =
-        includeChanges || originalPages.length === 0 ? allPages : originalPages;
+          includeChanges || originalPages.length === 0 ? allPages : originalPages;
 
       if (sourcePages && sourcePages.length > 0) {
         const start = startPage || 1;
         const end = endPage || sourcePages.length;
         return sourcePages
-          .filter(
-            (p) => (p.page_number || 0) >= start && (p.page_number || 0) <= end,
-          )
-          .sort((a, b) => (a.page_number || 0) - (b.page_number || 0));
+            .filter(
+                (p) => (p.page_number || 0) >= start && (p.page_number || 0) <= end,
+            )
+            .sort((a, b) => (a.page_number || 0) - (b.page_number || 0));
       }
 
       return data ? [data] : [];
@@ -65,10 +67,10 @@ export function usePdfExport() {
     const response = await fetch(RobotoRegular);
     const buffer = await response.arrayBuffer();
     const base64Font = btoa(
-      new Uint8Array(buffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        "",
-      ),
+        new Uint8Array(buffer).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            "",
+        ),
     );
 
     doc.addFileToVFS("Roboto-Regular.ttf", base64Font);
@@ -90,7 +92,7 @@ export function usePdfExport() {
 
       // 2. Secondary: Load image to get dimensions
       if (pageData.clean_image) {
-        const imgUrl = `http://localhost:8000/${pageData.clean_image}`;
+        const imgUrl = `${BASE_URL}/${pageData.clean_image}`;
         try {
           return await new Promise((resolve, reject) => {
             const img = new Image();

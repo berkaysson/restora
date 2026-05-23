@@ -5,6 +5,8 @@ import { ZoomController } from "../common/ZoomController";
 import type { TextLine, LayoutBlock } from "../../types";
 import { useAnalysis } from "../../context/AnalysisContext";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export const ImagePreview: React.FC = () => {
   const { data, highlightIndex, setHighlightIndex, highlightedBlockIndex, setHighlightedBlockIndex, hiddenLabels } =
     useAnalysis();
@@ -189,7 +191,7 @@ export const ImagePreview: React.FC = () => {
               }}
             >
               <img
-                src={`http://localhost:8000/${data.clean_image}`}
+                src={`${BASE_URL}/${data.clean_image}`}
                 alt="Scan"
                 className="block max-w-none hover:cursor-crosshair"
                 onLoad={onImageLoad}

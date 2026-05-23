@@ -53,7 +53,7 @@ class UploadDocumentUseCase:
         for i in range(1, total_pages + 1):
             await self.task_queue.enqueue_page(job_id, i, file_path)
 
-        return DocumentDTO.model_validate(document)
+        return DocumentDTO.from_document(document)
 
     def _get_page_count(self, file_path: str) -> int:
         """Dosyanın sayfa sayısını belirler."""
