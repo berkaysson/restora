@@ -142,6 +142,20 @@ class SqliteDocumentRepository(IDocumentRepository):
         conn = get_db_connection()
         try:
             with conn:
+                # Eger mevcut durum 'cancelled' veya 'failed' ise, durumu degistirme
+                current_status_row = conn.execute("SELECT status FROM documents WHERE id = ?", (job_id,)).fetchone()
+                if current_status_row:
+                    current_status = current_status_row["status"]
+                    if current_status in ("cancelled", "failed"):
+                        conn.execute(
+                            """UPDATE documents
+                               SET processed_pages = ?,
+                                   updated_at      = CURRENT_TIMESTAMP
+                               WHERE id = ?""",
+                            (processed_pages, job_id),
+                        )
+                        return
+
                 conn.execute(
                     """UPDATE documents
                        SET processed_pages = ?,

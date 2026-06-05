@@ -29,5 +29,9 @@ class Document:
         self.status = DocumentStatus.FAILED
         self.updated_at = datetime.now()
 
+    def mark_as_cancelled(self) -> None:
+        self.status = DocumentStatus.CANCELLED
+        self.updated_at = datetime.now()
+
     def is_fully_processed(self) -> bool:
         return self.processed_pages == self.total_pages and self.status == DocumentStatus.COMPLETED

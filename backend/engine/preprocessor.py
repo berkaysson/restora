@@ -1,13 +1,19 @@
-"""
-Image Preprocessing Module.
-
-This module handles file preprocessing before OCR analysis:
-- PDF to image conversion using pypdfium2
-"""
-
+import asyncio
 import pypdfium2 as pdfium
 import os
 from logger import log_manager
+
+
+def _convert_pdf_to_image_sync(image_path: str) -> str:
+    pdf = pdfium.PdfDocument(image_path)
+    page = pdf[0]  # Take first page
+    pil_image = page.render(scale=3).to_pil()  # scale 3 = 216 dpi approx, good for OCR
+
+    # Save as temp image
+    new_image_path = os.path.splitext(image_path)[0] + ".jpg"
+    pil_image.save(new_image_path)
+    pdf.close()
+    return new_image_path
 
 
 async def convert_pdf_to_image(image_path: str) -> str:
@@ -33,15 +39,7 @@ async def convert_pdf_to_image(image_path: str) -> str:
     """
     try:
         await log_manager.log("OCR Engine: converting PDF to image...", "backend")
-        pdf = pdfium.PdfDocument(image_path)
-        page = pdf[0]  # Take first page
-        pil_image = page.render(
-            scale=3
-        ).to_pil()  # scale 3 = 216 dpi approx, good for OCR
-
-        # Save as temp image
-        new_image_path = os.path.splitext(image_path)[0] + ".jpg"
-        pil_image.save(new_image_path)
+        new_image_path = await asyncio.to_thread(_convert_pdf_to_image_sync, image_path)
         await log_manager.log(
             f"OCR Engine: PDF converted to {new_image_path}", "backend"
         )
@@ -49,6 +47,13 @@ async def convert_pdf_to_image(image_path: str) -> str:
     except Exception as e:
         await log_manager.log(f"PDF Conversion Error: {e}", "backend")
         raise e
+
+
+def _get_pdf_page_count_sync(pdf_path: str) -> int:
+    pdf = pdfium.PdfDocument(pdf_path)
+    page_count = len(pdf)
+    pdf.close()
+    return page_count
 
 
 async def get_pdf_page_count(pdf_path: str) -> int:
@@ -65,18 +70,40 @@ async def get_pdf_page_count(pdf_path: str) -> int:
         Exception: If PDF cannot be read
     """
     try:
-        pdf = pdfium.PdfDocument(pdf_path)
-        page_count = len(pdf)
-        pdf.close()
-
+        page_count = await asyncio.to_thread(_get_pdf_page_count_sync, pdf_path)
         await log_manager.log(f"Preprocessor: PDF has {page_count} pages", "backend")
-
         return page_count
     except Exception as e:
         await log_manager.log(
             f"Preprocessor: Error reading PDF page count: {e}", "backend"
         )
         raise
+
+
+def _extract_pdf_page_sync(pdf_path: str, page_number: int) -> str:
+    pdf = pdfium.PdfDocument(pdf_path)
+
+    # Check if page exists (pypdfium2 uses 0-indexed)
+    if page_number < 1 or page_number > len(pdf):
+        pdf.close()
+        raise ValueError(
+            f"Page {page_number} out of range (PDF has {len(pdf)} pages)"
+        )
+
+    # Get the page (convert to 0-indexed)
+    page = pdf[page_number - 1]
+
+    # Render page to image (scale=3 for ~216 DPI)
+    pil_image = page.render(scale=3).to_pil()
+
+    # Save the page
+    base_name = os.path.splitext(pdf_path)[0]
+    image_path = f"{base_name}_page{page_number:03d}.png"
+    pil_image.save(image_path, "PNG")
+
+    # Close PDF
+    pdf.close()
+    return image_path
 
 
 async def extract_pdf_page(pdf_path: str, page_number: int) -> str:
@@ -97,35 +124,11 @@ async def extract_pdf_page(pdf_path: str, page_number: int) -> str:
         await log_manager.log(
             f"Preprocessor: Extracting page {page_number} from PDF", "backend"
         )
-
-        pdf = pdfium.PdfDocument(pdf_path)
-
-        # Check if page exists (pypdfium2 uses 0-indexed)
-        if page_number < 1 or page_number > len(pdf):
-            raise ValueError(
-                f"Page {page_number} out of range (PDF has {len(pdf)} pages)"
-            )
-
-        # Get the page (convert to 0-indexed)
-        page = pdf[page_number - 1]
-
-        # Render page to image (scale=3 for ~216 DPI)
-        pil_image = page.render(scale=3).to_pil()
-
-        # Save the page
-        base_name = os.path.splitext(pdf_path)[0]
-        image_path = f"{base_name}_page{page_number:03d}.png"
-        pil_image.save(image_path, "PNG")
-
-        # Close PDF
-        pdf.close()
-
+        image_path = await asyncio.to_thread(_extract_pdf_page_sync, pdf_path, page_number)
         await log_manager.log(
             f"Preprocessor: Saved page {page_number} to {image_path}", "backend"
         )
-
         return image_path
-
     except Exception as e:
         await log_manager.log(
             f"Preprocessor: Error extracting page {page_number}: {e}", "backend"

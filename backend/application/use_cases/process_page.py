@@ -3,6 +3,7 @@ import time
 import shutil
 from typing import Optional
 from domain.interfaces import IDocumentRepository, IFileStorage, IOCREngine, INotificationService
+from domain.value_objects.document_status import DocumentStatus
 from infrastructure.storage.local_file_storage import LocalFileStorage
 from logger import log_manager
 
@@ -50,6 +51,13 @@ class ProcessPageUseCase:
         document = self.repository.get_by_id(job_id)
         if not document:
             await log_manager.log(f"ProcessPage Error: Document {job_id} not found", "backend")
+            return
+
+        if document.status == DocumentStatus.CANCELLED:
+            await log_manager.log(
+                f"ProcessPage: Skipping page {page_number} of cancelled document {job_id} at start",
+                "backend"
+            )
             return
 
         # İlgili sayfa entity'sini bul
@@ -101,10 +109,31 @@ class ProcessPageUseCase:
                 # Resim dosyası ise doğrudan kullan
                 page_image_path = file_path
 
+            # 2.5. İptal Kontrolü (DB'den en güncel durumu sorgula)
+            current_doc = self.repository.get_by_id(job_id)
+            if current_doc and current_doc.status == DocumentStatus.CANCELLED:
+                await log_manager.log(
+                    f"ProcessPage: Aborting page {page_number} of cancelled document {job_id} before OCR",
+                    "backend"
+                )
+                return
+
             # 3. OCR Motorunu çağır
             processed_image_path, ocr_result, layout_data = await self.ocr_engine.process_page(
                 page_image_path
             )
+
+            # 3.5. İptal Kontrolü (DB'den en güncel durumu sorgula)
+            current_doc = self.repository.get_by_id(job_id)
+            if current_doc and current_doc.status == DocumentStatus.CANCELLED:
+                await log_manager.log(
+                    f"ProcessPage: Aborting page {page_number} of cancelled document {job_id} after OCR",
+                    "backend"
+                )
+                if processed_image_path and processed_image_path != page_image_path:
+                    try: os.remove(processed_image_path)
+                    except: pass
+                return
 
             # 4. OCR Motoru yeni (işlenmiş/temizlenmiş) bir resim döndürdüyse onu kalıcı konuma taşı
             if processed_image_path and processed_image_path != page_image_path:

@@ -27,3 +27,6 @@ class Page:
     def mark_as_failed(self, error_message: str) -> None:
         self.status = DocumentStatus.FAILED
         self.error_message = error_message
+
+    def mark_as_cancelled(self) -> None:
+        self.status = DocumentStatus.CANCELLED

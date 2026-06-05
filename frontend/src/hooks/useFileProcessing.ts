@@ -8,8 +8,8 @@
  * @module hooks/useFileProcessing
  */
 
-import { useCallback, useEffect } from "react";
-import axios, { type AxiosResponse } from "axios";
+import { useCallback, useEffect, useRef } from "react";
+import axios from "axios";
 import { useLayout } from "../context/LayoutContext";
 import { useAnalysis } from "../context/AnalysisContext";
 import { useLogs } from "../context/LogContext";
@@ -51,33 +51,14 @@ export function useFileProcessing() {
     setTotalPages,
     currentPage,
     setCurrentPage,
+    currentJobId,
+    setCurrentJobId,
   } = useLayout();
 
-  const { setData, setHiddenLabels, setAllPages, allPages, setSelectedIndex } =
+  const { setData, setHiddenLabels, setAllPages, allPages, setSelectedIndex, clearAnalysis } =
     useAnalysis();
   const { addLog, clearLogs } = useLogs();
-
-  const processResponse = useCallback(
-    (res: AxiosResponse) => {
-      if (res.data.status === "error") {
-        throw new Error(res.data.message || "Unknown backend error");
-      }
-
-      // Surya çıktısını parse et
-      const parsedLayout = (typeof res.data.layout === "string"
-        ? JSON.parse(res.data.layout)
-        : res.data.layout) || { text_lines: [] };
-
-      // Türkçe Temizlikleri Uygula
-      const fixedText = fixTurkishHyphens(res.data.text);
-
-      setHiddenLabels([]); // Reset filters
-      setSelectedIndex(null);
-      setData({ ...res.data, text: fixedText, layout: parsedLayout });
-      addLog(`Frontend: Data successfully updated.`, "frontend");
-    },
-    [setData, setHiddenLabels, addLog, setSelectedIndex],
-  );
+  const socketRef = useRef<WebSocket | null>(null);
 
   const fetchAllPages = useCallback(
     async (jobId: string) => {
@@ -189,6 +170,7 @@ export function useFileProcessing() {
       setLoadingMessage("Dosya yükleniyor...");
 
       const file = e.target.files[0];
+      e.target.value = ""; // Clear the file input value
       addLog(`Frontend: Started processing file ${file.name}`, "frontend");
 
       const formData = new FormData();
@@ -219,6 +201,7 @@ export function useFileProcessing() {
         const doc = res.data;
         const jobId = doc.id;
         
+        setCurrentJobId(jobId);
         setTotalPages(doc.total_pages);
         setProcessedPages(doc.processed_pages);
         
@@ -237,6 +220,13 @@ export function useFileProcessing() {
           // Connect to progress WS
           const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/api/v2/ws/progress/${jobId}`;
           const socket = new WebSocket(wsUrl);
+          socketRef.current = socket;
+
+          socket.onclose = () => {
+            if (socketRef.current === socket) {
+              socketRef.current = null;
+            }
+          };
 
           socket.onopen = () => {
             addLog(`Frontend: Connected to progress stream for ${jobId}`, "system");
@@ -265,6 +255,8 @@ export function useFileProcessing() {
                   setProgress(100);
                   addLog(`Frontend: Job ${jobId} completed`, "system");
                   socket.close();
+                  socketRef.current = null;
+                  setCurrentJobId(null);
 
                   setTimeout(() => {
                     fetchAllPages(jobId);
@@ -275,6 +267,15 @@ export function useFileProcessing() {
                   `Frontend: Page ${data.page_number} failed: ${data.error}`,
                   "system"
                 );
+              } else if (data.event === "job_cancelled") {
+                addLog(`Frontend: Job ${jobId} was cancelled`, "system");
+                setProgress(0);
+                setLoading(false);
+                setIsOverlayOpen(false);
+                setCurrentJobId(null);
+                socket.close();
+                socketRef.current = null;
+                alert("İşlem iptal edildi.");
               }
             } catch (e) {
               console.error("WS Parse Error", e);
@@ -307,6 +308,7 @@ export function useFileProcessing() {
       fetchAllPages,
       setCurrentPage,
       setSelectedIndex,
+      setCurrentJobId,
     ]
   );
 
@@ -336,6 +338,7 @@ export function useFileProcessing() {
 
         setProcessedPages(doc.processed_pages);
         setTotalPages(doc.total_pages);
+        setCurrentJobId(jobId);
         
         if (doc.status === "completed") {
           // If already completed, load all pages
@@ -355,6 +358,13 @@ export function useFileProcessing() {
             setLoadingMessage("AI Analizi yapılıyor...");
             const wsUrl = `${BASE_URL.replace(/^http/, "ws")}/api/v2/ws/progress/${jobId}`;
             const socket = new WebSocket(wsUrl);
+            socketRef.current = socket;
+
+            socket.onclose = () => {
+              if (socketRef.current === socket) {
+                socketRef.current = null;
+              }
+            };
 
             socket.onopen = () => {
               addLog(`Frontend: Connected to progress stream for ${jobId}`, "system");
@@ -377,6 +387,8 @@ export function useFileProcessing() {
                     setProgress(100);
                     addLog(`Frontend: Job completed`, "system");
                     socket.close();
+                    socketRef.current = null;
+                    setCurrentJobId(null);
                     setTimeout(() => {
                       fetchAllPages(jobId);
                     }, 500);
@@ -386,6 +398,15 @@ export function useFileProcessing() {
                     `Frontend: Page ${data.page_number} failed: ${data.error}`,
                     "system",
                   );
+                } else if (data.event === "job_cancelled") {
+                  addLog(`Frontend: Job ${jobId} was cancelled`, "system");
+                  setProgress(0);
+                  setLoading(false);
+                  setIsOverlayOpen(false);
+                  setCurrentJobId(null);
+                  socket.close();
+                  socketRef.current = null;
+                  alert("İşlem iptal edildi.");
                 }
               } catch (e) {
                 console.error("WS Parse Error", e);
@@ -418,8 +439,35 @@ export function useFileProcessing() {
       fetchAllPages,
       setCurrentPage,
       setSelectedIndex,
+      setCurrentJobId,
     ]
   );
 
-  return { handleUpload, handleOpenFile, fetchAllPages };
+  const handleCancel = useCallback(async () => {
+    if (!currentJobId) return;
+    if (!confirm("Bu işlemi iptal etmek istediğinizden emin misiniz?")) return;
+
+    try {
+      addLog(`Frontend: Sending cancel request for job ${currentJobId}...`, "frontend");
+      await axios.post(`${BASE_URL}/api/v2/ocr/cancel/${currentJobId}`);
+      addLog(`Frontend: Cancel request sent successfully.`, "frontend");
+
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      
+      setCurrentJobId(null);
+      setProgress(0);
+      setLoading(false);
+      setIsOverlayOpen(false);
+      clearAnalysis();
+    } catch (err) {
+      console.error(err);
+      addLog(`Frontend: Error cancelling job - ${err}`, "frontend");
+      alert(`Hata oluştu! ${err instanceof Error ? err.message : "Bilinmeyen hata"}`);
+    }
+  }, [currentJobId, addLog, setLoading, setIsOverlayOpen, setProgress, setCurrentJobId, clearAnalysis]);
+
+  return { handleUpload, handleOpenFile, handleCancel, fetchAllPages };
 }

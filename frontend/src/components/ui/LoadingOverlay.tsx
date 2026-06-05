@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useLogs } from "../../context/LogContext";
-import { X, CheckCircle2 } from "lucide-react";
+import { X, CheckCircle2, XCircle } from "lucide-react";
 
 interface LoadingOverlayProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface LoadingOverlayProps {
   processedPages?: number;
   totalPages?: number;
   onClose: () => void;
+  onCancel?: () => void;
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
@@ -20,6 +21,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   processedPages = 0,
   totalPages = 0,
   onClose,
+  onCancel,
 }) => {
   const { logs } = useLogs();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -38,7 +40,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   const recentLogs = logs.slice(-10); // Show more logs if inspecting
 
   return (
-    <div className="absolute inset-0 z-100 flex items-center justify-center duration-200 bg-base-300/80 backdrop-blur-sm animate-in fade-in">
+    <div className="absolute inset-0 flex items-center justify-center duration-200 z-100 bg-base-300/80 backdrop-blur-sm animate-in fade-in">
       <div className="relative border shadow-xl card w-lg bg-base-100 border-base-content/10">
         {/* Close Button */}
         <button
@@ -127,12 +129,24 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
             </div>
           </div>
 
-          {isCompleted && (
+          {isCompleted ? (
             <div className="justify-center w-full mt-4 card-actions">
               <button onClick={onClose} className="btn btn-primary btn-block">
                 Devam Et
               </button>
             </div>
+          ) : (
+            onCancel && (
+              <div className="justify-center w-full mt-4 card-actions">
+                <button
+                  onClick={onCancel}
+                  className="btn btn-error btn-outline btn-block gap-2 border-2 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200"
+                >
+                  <XCircle className="w-4 h-4" />
+                  İşlemi İptal Et
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>

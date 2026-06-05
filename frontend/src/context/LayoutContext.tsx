@@ -65,6 +65,10 @@ interface LayoutContextType {
   isHeaderCompact: boolean;
   /** Toggle header compact mode */
   setIsHeaderCompact: (compact: boolean) => void;
+  /** Current active processing job ID */
+  currentJobId: string | null;
+  /** Set current active processing job ID */
+  setCurrentJobId: (jobId: string | null) => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -90,6 +94,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isHeaderCompact, setIsHeaderCompact] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizing = useRef(false);
@@ -148,6 +153,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       setCurrentPage,
       isHeaderCompact,
       setIsHeaderCompact,
+      currentJobId,
+      setCurrentJobId,
     }),
     [
       leftPanelWidth,
@@ -160,6 +167,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
       totalPages,
       currentPage,
       isHeaderCompact,
+      currentJobId,
     ],
   );
 
