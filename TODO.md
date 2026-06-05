@@ -35,12 +35,16 @@
 - [x] Add new modes to show layout blocks and blocks.
 - [x] ***Extract the logic of calculating font size and text position from views-layers and create a reusable hook. Thus the export pdf hook can use it to produce same structure for each page.
 - [x] Lets show the reading order in LayoutBlocksView.
+- [ ] Add a quick-cleanup action to remove all layout blocks labeled "no label" from the page layout to speed up layout refinement.
+- [ ] Implement a threshold-based automated cleanup button to delete all detected text blocks below a user-defined OCR confidence score to reduce manual noise removal.
+- [ ] Build a state persistence system to automatically save document settings and edits (including deleted blocks, text corrections, and hidden/removed layers) across sessions.
 
 ## Export & Read-Aloud Features
 
 - [x] Export as searchable pdf
 - [x] While showing text paragraphs should be together otherwise read aloud cuts between sentences. We can do this while exporting, maybe a button to make section locked and fixed.
 - [ ] Add semantic Markdown export with proper heading structure for browser read-aloud and reader view compatibility. We can use reading order (position) to create page structure.
+- [ ] Exclude system/page headers (e.g., "sayfa-7" annotations) during semantic PDF and Markdown exports to deliver clean, read-aloud compatible text.
 - [x] Export whole pdf with all pages.
 - [x] Exported pdfs dont look same with ui text editor. Paragraphs and sections looks out of position.
 
