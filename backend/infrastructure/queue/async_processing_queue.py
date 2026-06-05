@@ -47,26 +47,11 @@ class AsyncProcessingQueue(ITaskQueue):
 
     async def cancel_job(self, job_id: str) -> None:
         """Aktif bir işi iptal eder. Kuyrukta bekleyen sayfalar atlanır."""
-        if job_id not in self.active_jobs:
-            self.active_jobs[job_id] = {}
-        self.active_jobs[job_id]["cancelled"] = True
-
-        # Kuyruktaki bu işe ait olan tüm sayfaları hemen temizle
-        new_queue = asyncio.Queue()
-        removed_count = 0
-        while not self.queue.empty():
-            item = self.queue.get_nowait()
-            if item[0] != job_id:
-                new_queue.put_nowait(item)
-            else:
-                removed_count += 1
-                self.queue.task_done()
-        self.queue = new_queue
-
-        await log_manager.log(
-            f"Queue: Job {job_id} marked for cancellation. Removed {removed_count} pages from queue.",
-            "backend"
-        )
+        if job_id in self.active_jobs:
+            self.active_jobs[job_id]["cancelled"] = True
+            await log_manager.log(
+                f"Queue: Job {job_id} marked for cancellation", "backend"
+            )
 
     async def start(self) -> None:
         """Kuyruk worker'larını başlatır."""

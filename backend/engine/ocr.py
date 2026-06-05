@@ -10,7 +10,6 @@ The output provides both raw text and structured layout information
 with bounding boxes, confidence scores, and semantic labels for each line.
 """
 
-import asyncio
 from PIL import Image
 from logger import log_manager
 from . import models
@@ -62,17 +61,17 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
         await log_manager.log("OCR Engine: Running Surya OCR...", "backend")
 
         try:
-            # Run recognition with detection in thread
-            predictions = await asyncio.to_thread(
-                models.rec_predictor, [pil_img], det_predictor=models.det_predictor
+            # Run recognition with detection
+            predictions = models.rec_predictor(
+                [pil_img], det_predictor=models.det_predictor
             )
             result = predictions[0]
 
-            # Run Layout Analysis in thread
+            # Run Layout Analysis
             layout_blocks = []
             if models.layout_predictor:
                 try:
-                    layout_preds = await asyncio.to_thread(models.layout_predictor, [pil_img])
+                    layout_preds = models.layout_predictor([pil_img])
                     l_result = layout_preds[0]
                     # Surya Layout returns 'bboxes' attribute for blocks
                     for block in getattr(l_result, "bboxes", []):

@@ -4,14 +4,12 @@ from application.use_cases.upload_document import UploadDocumentUseCase
 from application.use_cases.reprocess_document import ReprocessDocumentUseCase
 from application.use_cases.list_documents import ListDocumentsUseCase
 from application.use_cases.delete_document import DeleteDocumentUseCase
-from application.use_cases.cancel_job import CancelJobUseCase
 from application.dto.document_dto import DocumentDTO
 from api.dependencies import (
     get_upload_use_case,
     get_reprocess_document_use_case,
     get_list_documents_use_case,
-    get_delete_document_use_case,
-    get_cancel_job_use_case
+    get_delete_document_use_case
 )
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
@@ -71,17 +69,3 @@ async def reprocess_document(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"İşleme hatası: {str(e)}")
-
-
-@router.post("/cancel/{job_id}")
-async def cancel_job(
-    job_id: str,
-    use_case: CancelJobUseCase = Depends(get_cancel_job_use_case)
-):
-    """
-    Devam eden bir OCR işlemini iptal eder.
-    """
-    success = await use_case.execute(job_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Doküman bulunamadı veya iptal edilemedi")
-    return {"status": "success", "message": f"İşlem {job_id} iptal edildi"}
