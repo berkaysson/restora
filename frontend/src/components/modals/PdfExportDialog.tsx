@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, X, Layers, BookOpen } from "lucide-react";
 import { DualRangeSlider } from "../ui/DualRangeSlider";
 
 interface PdfExportDialogProps {
@@ -8,8 +8,9 @@ interface PdfExportDialogProps {
   onExport: (
     startPage: number,
     endPage: number,
-    useBlocks: boolean,
+    format: "layout-pdf" | "semantic-pdf",
     includeChanges: boolean,
+    mergeHyphens: boolean,
   ) => Promise<void>;
   totalPages: number;
 }
@@ -24,6 +25,8 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
   const [startInput, setStartInput] = useState<string>("1");
   const [endInput, setEndInput] = useState<string>(totalPages.toString());
   const [includeChanges, setIncludeChanges] = useState(true);
+  const [mergeHyphens, setMergeHyphens] = useState(true);
+  const [format, setFormat] = useState<"layout-pdf" | "semantic-pdf">("layout-pdf");
   const [isLoading, setIsLoading] = useState(false);
 
   // State initializes on mount when dialog opens (controlled by key or conditional rendering in parent)
@@ -66,7 +69,7 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
 
   const handleExport = async () => {
     setIsLoading(true);
-    await onExport(range[0], range[1], true, includeChanges);
+    await onExport(range[0], range[1], format, includeChanges, mergeHyphens);
     setIsLoading(false);
     onClose();
   };
@@ -88,6 +91,46 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
         </h3>
 
         <div className="space-y-6">
+          {/* Format Selector Tabs */}
+          <div className="space-y-2">
+            <label className="py-0 label">
+              <span className="font-medium label-text">Dışa Aktarma Formatı</span>
+            </label>
+            <div className="flex w-full p-1 join bg-base-200/50">
+              <button
+                type="button"
+                className={`join-item btn btn-xs h-8 flex-1 transition-all duration-200 ${
+                  format === "layout-pdf"
+                    ? "btn-primary shadow-lg scale-105 z-10"
+                    : "btn-ghost text-base-content/50 hover:text-base-content/80"
+                }`}
+                onClick={() => !isLoading && setFormat("layout-pdf")}
+                disabled={isLoading}
+              >
+                <Layers size={14} className="mr-1.5" />
+                <span>PDF (Düzen)</span>
+              </button>
+              <button
+                type="button"
+                className={`join-item btn btn-xs h-8 flex-1 transition-all duration-200 ${
+                  format === "semantic-pdf"
+                    ? "btn-primary shadow-lg scale-105 z-10"
+                    : "btn-ghost text-base-content/50 hover:text-base-content/80"
+                }`}
+                onClick={() => !isLoading && setFormat("semantic-pdf")}
+                disabled={isLoading}
+              >
+                <BookOpen size={14} className="mr-1.5" />
+                <span>PDF (Semantik)</span>
+              </button>
+            </div>
+            <p className="text-xs text-base-content/60 leading-relaxed min-h-[32px] px-1">
+              {format === "layout-pdf" && "Metinleri orijinal koordinatlarında konumlandırarak arama yapılabilir PDF üretir."}
+              {format === "semantic-pdf" && "Metinleri okuma sırasına göre akışkan şekilde dizer, başlıkları ve paragrafları düzenler."}
+            </p>
+          </div>
+
+          {/* Page Range Selectors */}
           <div className="flex items-center justify-between text-sm font-medium">
             <span>Başlangıç: {range[0]}</span>
             <span>Bitiş: {range[1]}</span>
@@ -156,21 +199,31 @@ export const PdfExportDialog: React.FC<PdfExportDialogProps> = ({
             </label>
             <span className="block text-xs text-base-content/60 mt-0.5">
               Editörde yapılan düzenlemeleri, silinen satırları ve gizlenen
-              bölümleri PDF'e yansıtır. Kapalıyken orijinal metin kullanılır.
+              bölümleri dışa aktarılan dosyaya yansıtır. Kapalıyken orijinal metin kullanılır.
             </span>
           </div>
 
-          <div className="pt-2 border-t border-base-content/10">
-            <label className="flex items-center gap-3 label">
-              <span className="flex-1 label-text">
-                <span className="block font-medium">Akıllı Paragraf Modu</span>
+          {format === "semantic-pdf" && (
+            <div className="pt-4 border-t border-base-content/10">
+              <label className="flex items-center gap-3 pr-4 cursor-pointer label">
+                <span className="flex-1 label-text">
+                  <span className="block font-medium">
+                    Satır Sonu Hece Birleştirme
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  className="toggle toggle-primary toggle-sm"
+                  checked={mergeHyphens}
+                  onChange={(e) => setMergeHyphens(e.target.checked)}
+                  disabled={isLoading}
+                />
+              </label>
+              <span className="block text-xs text-base-content/60 mt-0.5">
+                Satır sonuna sığmayan ve hece çizgisiyle ayrılan kelimeleri otomatik birleştirir (Örn: kamp- larında | kamplarında).
               </span>
-            </label>
-            <span className="block text-xs text-base-content/80 mt-0.5">
-              Metinleri paragraf blokları halinde dışa aktarır (Sesli okuma
-              performansını arttırır).
-            </span>
-          </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 mt-6">
             <button

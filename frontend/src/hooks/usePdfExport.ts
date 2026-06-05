@@ -12,6 +12,8 @@ import { jsPDF } from "jspdf";
 import { useAnalysis } from "../context/AnalysisContext";
 import type { PageData, TextLine } from "../types";
 import RobotoRegular from "../assets/Roboto-Regular.ttf";
+import { stripHtmlTags } from "../utils/textUtils";
+import { getSortedLines, groupLines, mergeHyphenatedLineBreaks } from "../utils/exportUtils";
 
 import {
   calculateTextLayout,
@@ -210,14 +212,144 @@ export function usePdfExport() {
   );
 
   /**
-   * Generate and download a searchable PDF from current OCR data.
-   * Uses the shared layout logic to match the UI's appearance.
+   * Helper to generate a flowable semantic PDF.
+   */
+  const generateSemanticPdf = useCallback(
+    async (pagesToExport: PageData[], includeChanges: boolean, mergeHyphens: boolean) => {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: "a4",
+      });
+      doc.deletePage(1);
+
+      await loadPdfFont(doc);
+
+      const PAGE_WIDTH = 595.28;
+      const PAGE_HEIGHT = 841.89;
+      const MARGIN_LEFT = 40;
+      const MARGIN_RIGHT = 40;
+      const MARGIN_TOP = 50;
+      const MARGIN_BOTTOM = 50;
+      const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+
+      let currentY = MARGIN_TOP;
+
+      const ensurePage = () => {
+        if (doc.getNumberOfPages() === 0) {
+          doc.addPage([PAGE_WIDTH, PAGE_HEIGHT], "portrait");
+          doc.setFont("Roboto", "normal");
+          currentY = MARGIN_TOP;
+        }
+      };
+
+      const checkPageBreak = (neededHeight: number) => {
+        ensurePage();
+        if (currentY + neededHeight > PAGE_HEIGHT - MARGIN_BOTTOM) {
+          doc.addPage([PAGE_WIDTH, PAGE_HEIGHT], "portrait");
+          doc.setFont("Roboto", "normal");
+          currentY = MARGIN_TOP;
+        }
+      };
+
+      for (const page of pagesToExport) {
+        if (!page.layout?.text_lines) continue;
+
+        const pageNum = page.page_number || 1;
+        const hiddenLabels = getHiddenLabelsForPage(pageNum, includeChanges);
+
+        const visibleLines = page.layout.text_lines.filter((line) => {
+          return isItemVisible(line.layout_labels, hiddenLabels, includeChanges);
+        });
+
+        const sortedLines = getSortedLines(visibleLines);
+        const groups = groupLines(sortedLines);
+
+        // Add page header/separator
+        checkPageBreak(35);
+        doc.setFont("Roboto", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`--- Sayfa ${pageNum} ---`, PAGE_WIDTH / 2, currentY, { align: "center" });
+        currentY += 25;
+
+        for (const group of groups) {
+          let text = "";
+          if (mergeHyphens) {
+            const textWithNewlines = group.lines
+              .map((l) => stripHtmlTags(l.text).trim())
+              .join("\n");
+            text = mergeHyphenatedLineBreaks(textWithNewlines);
+          } else {
+            text = group.lines
+              .map((l) => stripHtmlTags(l.text).trim())
+              .join(" ");
+          }
+          if (!text) continue;
+
+          let fontSize = 11;
+          let textColor = [50, 50, 50];
+          let spacingAfter = 12;
+
+          if (group.label === "Section-header") {
+            fontSize = 15;
+            textColor = [31, 41, 55];
+            spacingAfter = 16;
+          } else if (group.label === "List") {
+            fontSize = 11;
+            textColor = [60, 60, 60];
+            spacingAfter = 8;
+          } else if (group.label === "Footnote") {
+            fontSize = 9;
+            textColor = [120, 120, 120];
+            spacingAfter = 10;
+          } else if (group.label === "Caption") {
+            fontSize = 10;
+            textColor = [100, 100, 100];
+            spacingAfter = 10;
+          }
+
+          ensurePage();
+          doc.setFont("Roboto", "normal");
+          doc.setFontSize(fontSize);
+          doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+          let linesToDraw: string[] = [];
+          if (group.label === "List") {
+            group.lines.forEach((l) => {
+              const itemText = `• ${stripHtmlTags(l.text).trim()}`;
+              const splitLines = doc.splitTextToSize(itemText, CONTENT_WIDTH);
+              linesToDraw.push(...splitLines);
+            });
+          } else {
+            linesToDraw = doc.splitTextToSize(text, CONTENT_WIDTH);
+          }
+
+          const lineHeight = fontSize * 1.35;
+          const blockHeight = linesToDraw.length * lineHeight + spacingAfter;
+
+          checkPageBreak(blockHeight);
+
+          doc.text(linesToDraw, MARGIN_LEFT, currentY + fontSize);
+          currentY += blockHeight;
+        }
+      }
+
+      doc.save(`export_semantic_${data?.job_id || "document"}.pdf`);
+    },
+    [data, loadPdfFont, getHiddenLabelsForPage, isItemVisible],
+  );
+
+  /**
+   * Generate and download a PDF file from current OCR data.
    */
   const handleExportPdf = useCallback(
     async (
       startPage?: number,
       endPage?: number,
+      format: "layout-pdf" | "semantic-pdf" = "layout-pdf",
       includeChanges: boolean = true,
+      mergeHyphens: boolean = true,
     ) => {
       setIsExporting(true);
 
@@ -233,32 +365,44 @@ export function usePdfExport() {
           return;
         }
 
-        // Create PDF document
-        const doc = new jsPDF({
-          orientation: "portrait",
-          unit: "px",
-          format: "a4",
-        });
-        doc.deletePage(1);
+        if (format === "semantic-pdf") {
+          await generateSemanticPdf(pagesToExport, includeChanges, mergeHyphens);
+        } else {
+          // Default: layout-pdf
+          // Create PDF document
+          const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "px",
+            format: "a4",
+          });
+          doc.deletePage(1);
 
-        // Load Font
-        await loadPdfFont(doc);
+          // Load Font
+          await loadPdfFont(doc);
 
-        // Process each page
-        for (const pageData of pagesToExport) {
-          const { width, height } = await getPageDimensions(pageData);
-          renderPage(doc, pageData, width, height, includeChanges);
+          // Process each page
+          for (const pageData of pagesToExport) {
+            const { width, height } = await getPageDimensions(pageData);
+            renderPage(doc, pageData, width, height, includeChanges);
+          }
+
+          doc.save(`export_${data?.job_id || "document"}.pdf`);
         }
-
-        doc.save(`export_${data?.job_id || "document"}.pdf`);
       } catch (error) {
-        console.error("PDF Export Error:", error);
-        alert("PDF oluşturulurken hata oluştu.");
+        console.error("Export Error:", error);
+        alert("Dosya oluşturulurken hata oluştu.");
       } finally {
         setIsExporting(false);
       }
     },
-    [data, getPagesToExport, loadPdfFont, getPageDimensions, renderPage],
+    [
+      data,
+      getPagesToExport,
+      generateSemanticPdf,
+      loadPdfFont,
+      getPageDimensions,
+      renderPage,
+    ],
   );
 
   return { handleExportPdf, isExporting };
