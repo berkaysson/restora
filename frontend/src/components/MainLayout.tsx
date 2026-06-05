@@ -31,7 +31,7 @@ export const MainLayout = () => {
   } = useLayout();
 
   const { data, clearAnalysis } = useAnalysis();
-  const { handleUpload, handleOpenFile } = useFileProcessing();
+  const { handleUpload, handleOpenFile, cancelProcessing } = useFileProcessing();
   const { handleExportPdf } = usePdfExport();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
@@ -83,6 +83,7 @@ export const MainLayout = () => {
           processedPages={processedPages}
           totalPages={totalPages}
           onClose={() => setIsOverlayOpen(false)}
+          onCancel={cancelProcessing}
         />
 
         {/* Left Panel: Visual Analysis */}

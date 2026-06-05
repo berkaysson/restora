@@ -10,9 +10,12 @@ The output provides both raw text and structured layout information
 with bounding boxes, confidence scores, and semantic labels for each line.
 """
 
+import asyncio
 from PIL import Image
 from logger import log_manager
 from . import models
+
+_ocr_lock = asyncio.Lock()
 
 
 async def run_ocr(image_path: str) -> tuple[str, dict]:
@@ -60,34 +63,40 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
     if models.rec_predictor and models.det_predictor:
         await log_manager.log("OCR Engine: Running Surya OCR...", "backend")
 
+        async with _ocr_lock:
+            try:
+                # Run recognition with detection
+                predictions = await asyncio.to_thread(
+                    models.rec_predictor, [pil_img], det_predictor=models.det_predictor
+                )
+                result = predictions[0]
+
+                # Run Layout Analysis
+                layout_blocks = []
+                if models.layout_predictor:
+                    try:
+                        layout_preds = await asyncio.to_thread(models.layout_predictor, [pil_img])
+                        l_result = layout_preds[0]
+                        # Surya Layout returns 'bboxes' attribute for blocks
+                        for block in getattr(l_result, "bboxes", []):
+                            layout_blocks.append(
+                                {
+                                    "label": block.label,
+                                    "confidence": getattr(block, "confidence", 1.0),
+                                    "bbox": block.bbox,
+                                    "polygon": block.polygon,
+                                    "position": getattr(block, "position", 0),
+                                }
+                            )
+                    except Exception as e:
+                        await log_manager.log(f"Layout Inference Error: {e}", "backend")
+            except Exception as e:
+                await log_manager.log(f"OCR Inference Error: {e}", "backend")
+                full_text = f"OCR Error: {e}"
+                return full_text, {"text_lines": [], "image_bbox": [0, 0, 0, 0], "blocks": []}
+
+        # Extract Text & Construct Custom Layout
         try:
-            # Run recognition with detection
-            predictions = models.rec_predictor(
-                [pil_img], det_predictor=models.det_predictor
-            )
-            result = predictions[0]
-
-            # Run Layout Analysis
-            layout_blocks = []
-            if models.layout_predictor:
-                try:
-                    layout_preds = models.layout_predictor([pil_img])
-                    l_result = layout_preds[0]
-                    # Surya Layout returns 'bboxes' attribute for blocks
-                    for block in getattr(l_result, "bboxes", []):
-                        layout_blocks.append(
-                            {
-                                "label": block.label,
-                                "confidence": getattr(block, "confidence", 1.0),
-                                "bbox": block.bbox,
-                                "polygon": block.polygon,
-                                "position": getattr(block, "position", 0),
-                            }
-                        )
-                except Exception as e:
-                    await log_manager.log(f"Layout Inference Error: {e}", "backend")
-
-            # Extract Text & Construct Custom Layout
             text_lines = []
             if hasattr(result, "text_lines"):
                 full_text = "\n".join([line.text for line in result.text_lines])
@@ -127,7 +136,7 @@ async def run_ocr(image_path: str) -> tuple[str, dict]:
                     }
                     text_lines.append(line_data)
 
-    # Group text lines into blocks
+            # Group text lines into blocks
             blocks = _group_lines_into_blocks(text_lines, layout_blocks)
 
             layout_json = {

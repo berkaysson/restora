@@ -3,6 +3,7 @@ import time
 import shutil
 from typing import Optional
 from domain.interfaces import IDocumentRepository, IFileStorage, IOCREngine, INotificationService
+from domain.value_objects.document_status import DocumentStatus
 from infrastructure.storage.local_file_storage import LocalFileStorage
 from logger import log_manager
 
@@ -106,6 +107,15 @@ class ProcessPageUseCase:
                 page_image_path
             )
 
+            # Check if document was deleted or cancelled during OCR processing
+            current_doc = self.repository.get_by_id(job_id)
+            if not current_doc or current_doc.status == DocumentStatus.CANCELLED:
+                await log_manager.log(
+                    f"ProcessPage: Document {job_id} was deleted or cancelled during OCR. Aborting save.",
+                    "backend"
+                )
+                return
+
             # 4. OCR Motoru yeni (işlenmiş/temizlenmiş) bir resim döndürdüyse onu kalıcı konuma taşı
             if processed_image_path and processed_image_path != page_image_path:
                 if os.path.exists(processed_image_path):
@@ -137,28 +147,34 @@ class ProcessPageUseCase:
             relative_image_path = f"uploads/{job_id}/pages/page_{page_number:03d}.png"
 
             page.mark_as_completed(relative_image_path, ocr_result, layout_data)
-            document.processed_pages += 1
-
-            # 7. Doküman tamamlandı mı kontrol et
-            if document.processed_pages >= document.total_pages:
-                document.mark_as_completed()
-                await log_manager.log(f"ProcessPage: Job {job_id} fully completed!", "backend")
-
-            # Sadece değişen 2 şeyi yaz: 1 sayfa + document sayacı (2 sorgu)
             self.repository.save_page(page)
-            self.repository.update_document_progress(
-                job_id, document.processed_pages, document.status
-            )
 
-            # WebSocket Bildirimi: Tamamlandı
-            if self.notification_service:
-                await self.notification_service.broadcast(job_id, {
-                    "event": "page_completed",
-                    "page_number": page_number,
-                    "processed_pages": document.processed_pages,
-                    "total_pages": document.total_pages,
-                    "status": document.status.value
-                })
+            # Fetch a fresh document state to calculate actual progress (prevents lost update concurrency issues)
+            fresh_doc = self.repository.get_by_id(job_id)
+            if fresh_doc:
+                completed_count = sum(
+                    1 for p in fresh_doc.pages if p.status == DocumentStatus.COMPLETED
+                )
+                
+                if completed_count >= fresh_doc.total_pages:
+                    new_status = DocumentStatus.COMPLETED
+                    await log_manager.log(f"ProcessPage: Job {job_id} fully completed!", "backend")
+                else:
+                    new_status = fresh_doc.status
+
+                self.repository.update_document_progress(
+                    job_id, completed_count, new_status
+                )
+
+                # WebSocket Bildirimi: Tamamlandı
+                if self.notification_service:
+                    await self.notification_service.broadcast(job_id, {
+                        "event": "page_completed",
+                        "page_number": page_number,
+                        "processed_pages": completed_count,
+                        "total_pages": fresh_doc.total_pages,
+                        "status": new_status.value
+                    })
 
             await log_manager.log(
                 f"ProcessPage: Page {page_number} completed in {processing_time:.2f}s", "backend"

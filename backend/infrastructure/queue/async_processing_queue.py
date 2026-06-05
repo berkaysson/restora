@@ -30,6 +30,7 @@ class AsyncProcessingQueue(ITaskQueue):
         self.active_jobs: Dict[str, Dict[str, Any]] = {}
         self.processing = False
         self._worker_tasks = []
+        self._running_tasks: Dict[str, set] = {}
 
     async def enqueue_page(self, job_id: str, page_number: int, file_path: str) -> None:
         """Bir sayfayı işlenmek üzere kuyruğa ekler."""
@@ -46,12 +47,35 @@ class AsyncProcessingQueue(ITaskQueue):
             raise QueueException(f"Failed to enqueue page: {e}") from e
 
     async def cancel_job(self, job_id: str) -> None:
-        """Aktif bir işi iptal eder. Kuyrukta bekleyen sayfalar atlanır."""
+        """Aktif bir işi iptal eder. Kuyrukta bekleyen sayfalar atlanır ve çalışan task'lar iptal edilir."""
         if job_id in self.active_jobs:
             self.active_jobs[job_id]["cancelled"] = True
             await log_manager.log(
                 f"Queue: Job {job_id} marked for cancellation", "backend"
             )
+
+            # 1. Kuyruktaki bu job'a ait elemanları temizle
+            temp_list = []
+            while not self.queue.empty():
+                try:
+                    item = self.queue.get_nowait()
+                    if item[0] != job_id:
+                        temp_list.append(item)
+                    else:
+                        self.queue.task_done()
+                except asyncio.QueueEmpty:
+                    break
+
+            for item in temp_list:
+                await self.queue.put(item)
+
+            # 2. Çalışan task'ları iptal et
+            if job_id in self._running_tasks:
+                for task in list(self._running_tasks[job_id]):
+                    task.cancel()
+                await log_manager.log(
+                    f"Queue: Cancelled running subtasks for job {job_id}", "backend"
+                )
 
     async def start(self) -> None:
         """Kuyruk worker'larını başlatır."""
@@ -96,8 +120,27 @@ class AsyncProcessingQueue(ITaskQueue):
                 )
 
                 # Sayfa işlemeyi Application katmanına devret
-                await self.page_processor(job_id, page_number, file_path)
-                self.queue.task_done()
+                task = asyncio.create_task(self.page_processor(job_id, page_number, file_path))
+                
+                if job_id not in self._running_tasks:
+                    self._running_tasks[job_id] = set()
+                self._running_tasks[job_id].add(task)
+
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    if not self.processing:
+                        raise
+                    await log_manager.log(
+                        f"Queue: Worker {worker_id} - Processing page {page_number} for job {job_id} was cancelled.",
+                        "backend",
+                    )
+                finally:
+                    if job_id in self._running_tasks and task in self._running_tasks[job_id]:
+                        self._running_tasks[job_id].remove(task)
+                        if not self._running_tasks[job_id]:
+                            del self._running_tasks[job_id]
+                    self.queue.task_done()
 
             except asyncio.TimeoutError:
                 continue

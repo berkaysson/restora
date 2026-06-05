@@ -12,6 +12,7 @@ from application.use_cases.reprocess_document import ReprocessDocumentUseCase
 from application.use_cases.list_documents import ListDocumentsUseCase
 from application.use_cases.get_document import GetDocumentUseCase
 from application.use_cases.delete_document import DeleteDocumentUseCase
+from application.use_cases.cancel_document import CancelDocumentUseCase
 
 # Singletons
 _repository_instance = None
@@ -115,3 +116,14 @@ def get_delete_document_use_case(
     task_queue: AsyncProcessingQueue = Depends(get_task_queue),
 ) -> DeleteDocumentUseCase:
     return DeleteDocumentUseCase(repository, storage, task_queue)
+
+
+def get_cancel_document_use_case(
+    repository: SqliteDocumentRepository = Depends(get_repository),
+    storage: LocalFileStorage = Depends(get_storage),
+    task_queue: AsyncProcessingQueue = Depends(get_task_queue),
+    notification_service: WebSocketNotificationService = Depends(
+        get_notification_service
+    ),
+) -> CancelDocumentUseCase:
+    return CancelDocumentUseCase(repository, storage, task_queue, notification_service)

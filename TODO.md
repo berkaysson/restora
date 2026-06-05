@@ -30,7 +30,7 @@
 - [ ] Use WebSocket infrastructure for progressive text loading to enable immediate playback of processed pages without waiting.
 - [ ] We should store and save the deleted lines and sections.
 - [x] Enable removing some sections from all pages. It should export with that
-- [ ] User can cancel jobs
+- [x] User can cancel jobs
 - [x] Bolded text should be bolded and the tags like <b> should be cleared from text.
 - [x] Add new modes to show layout blocks and blocks.
 - [x] ***Extract the logic of calculating font size and text position from views-layers and create a reusable hook. Thus the export pdf hook can use it to produce same structure for each page.

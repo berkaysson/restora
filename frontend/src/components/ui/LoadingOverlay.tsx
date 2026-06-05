@@ -10,6 +10,7 @@ interface LoadingOverlayProps {
   processedPages?: number;
   totalPages?: number;
   onClose: () => void;
+  onCancel?: () => void;
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
@@ -20,6 +21,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   processedPages = 0,
   totalPages = 0,
   onClose,
+  onCancel,
 }) => {
   const { logs } = useLogs();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,25 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
               )}
             </div>
           </div>
+
+          {!isCompleted && loading && onCancel && (
+            <div className="justify-center w-full mt-4 card-actions">
+              <button
+                onClick={onCancel}
+                className="btn btn-error btn-outline btn-block text-error hover:text-white"
+                disabled={message === "İşlem iptal ediliyor..."}
+              >
+                {message === "İşlem iptal ediliyor..." ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs mr-2"></span>
+                    İptal Ediliyor...
+                  </>
+                ) : (
+                  "İşlemi İptal Et"
+                )}
+              </button>
+            </div>
+          )}
 
           {isCompleted && (
             <div className="justify-center w-full mt-4 card-actions">
