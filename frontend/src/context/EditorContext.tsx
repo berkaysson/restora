@@ -45,7 +45,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSize] = useState(16);
   const [isWordWrap, setIsWordWrap] = useState(true);
-  const [showLayoutDetails, setShowLayoutDetails] = useState(false);
+  const [showLayoutDetails, setShowLayoutDetails] = useState(true);
 
   const value = useMemo(
     () => ({

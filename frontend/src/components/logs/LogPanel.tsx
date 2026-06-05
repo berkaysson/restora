@@ -21,7 +21,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({
     <>
       {/* Trigger Buttons Container */}
       <div
-        className={`fixed bottom-4 right-4 z-40 flex gap-2 transition-all duration-300 ${
+        className={`fixed bottom-4 left-4 z-40 flex gap-2 transition-all duration-300 ${
           isOpen ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
         }`}
       >

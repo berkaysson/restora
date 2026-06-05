@@ -156,7 +156,7 @@ export const ImagePreview: React.FC = () => {
   return (
     <div className="relative flex w-full h-full overflow-hidden bg-base-200/50 group">
       {data && (
-        <div className="absolute z-20 flex items-center gap-2 -translate-x-1/2 bottom-8 left-1/2">
+        <div className="absolute z-20 flex items-center gap-2 right-4 bottom-4">
           {/* Main Control Island */}
           <ZoomController
             zoom={zoom}

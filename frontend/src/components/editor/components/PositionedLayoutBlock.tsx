@@ -24,7 +24,6 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
   documentWidth,
   documentHeight,
   isHighlighted,
-  showDetails,
   onMouseEnter,
   onMouseLeave,
 }) => {
@@ -103,23 +102,14 @@ export const PositionedLayoutBlock: React.FC<PositionedLayoutBlockProps> = ({
 
       {/* Corner index indicator */}
       <span
-        className={`absolute bottom-1 right-2 text-sm font-black font-mono pointer-events-none transition-all duration-300 flex items-center gap-1.5 ${
-          isHighlighted || showDetails
-            ? "opacity-90 scale-100"
-            : "opacity-0 group-hover:opacity-60 scale-95"
-        }`}
+        className={`absolute bottom-0 right-0 w-11 h-11 rounded-full font-black font-mono pointer-events-none transition-all duration-300 flex items-center justify-center text-xl opacity-75 scale-130`}
         style={{
-          color: colors.text,
-          textShadow: "0 0 12px white, 0 0 4px white",
-          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+          backgroundColor: colors.border,
+          color: "#fff",
+          borderColor: "rgba(255, 255, 255, 0.45)",
         }}
       >
-        <span
-          className={`text-[9px] uppercase tracking-tighter transition-opacity duration-300 ${isHighlighted ? "opacity-70" : "opacity-0"}`}
-        >
-          Okuma Sırası:
-        </span>
-        #{block.position || idx + 1}
+        {block.position || idx + 1}
       </span>
     </div>
   );

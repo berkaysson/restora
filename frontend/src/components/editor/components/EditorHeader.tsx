@@ -1,6 +1,4 @@
 import React from "react";
-import { ZoomController } from "../../common/ZoomController";
-import { PageNavigator } from "../../common/PageNavigator";
 import {
   Layers,
   FileText,
@@ -16,17 +14,6 @@ import { useEditor } from "../../../context/EditorContext";
 export type EditorViewMode = "text-lines" | "layout-blocks" | "confidence";
 
 interface EditorHeaderProps {
-  lineCount: number;
-  blockCount: number;
-  width?: number;
-  height?: number;
-  hasDimensions: boolean;
-  zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
-  onFitContent: () => void;
-  onScroll: (dx: number, dy: number) => void;
   availableLabels: string[];
   hiddenLabels: string[];
   onToggleLabel: (label: string) => void;
@@ -42,17 +29,6 @@ interface EditorHeaderProps {
  * Header component with zoom controls and label filters
  */
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
-  lineCount,
-  blockCount,
-  width,
-  height,
-  hasDimensions,
-  zoom,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  onFitContent,
-  onScroll,
   availableLabels,
   hiddenLabels,
   onToggleLabel,
@@ -67,64 +43,6 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-1 p-2 border-b shadow-sm border-base-content/5 bg-base-100">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-1">
-            <span className="font-mono text-sm font-black leading-tight tracking-tighter uppercase text-base-content/80">
-              {viewMode === "text-lines"
-                ? `${lineCount} SATIR`
-                : viewMode === "layout-blocks"
-                  ? `${blockCount} BLOK`
-                  : `${lineCount} SATIR`}
-            </span>
-            <span className="font-mono text-[11px] font-bold leading-tight text-base-content/50">
-              {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
-            </span>
-          </div>
-          <div className="hidden w-px h-4 bg-base-content/10 sm:block" />
-          <PageNavigator />
-          {viewMode === "layout-blocks" && (
-            <>
-              <div className="hidden w-px h-4 bg-base-content/10 sm:block" />
-              <div
-                className="flex items-center gap-2 px-2 py-1 transition-all rounded-lg cursor-pointer bg-secondary/5 hover:bg-secondary/10 group/toggle"
-                onClick={() => setShowLayoutDetails(!showLayoutDetails)}
-                title={
-                  showLayoutDetails
-                    ? "Okuma sırası numarasını gizle"
-                    : "Okuma sırası numarasını göster"
-                }
-              >
-                <div
-                  className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${
-                    showLayoutDetails ? "bg-secondary" : "bg-base-content/20"
-                  }`}
-                >
-                  <div
-                    className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm"
-                    style={{ left: showLayoutDetails ? "18px" : "2px" }}
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {showLayoutDetails ? (
-                    <Eye size={12} className="text-secondary" />
-                  ) : (
-                    <EyeOff size={12} className="text-base-content/40" />
-                  )}
-                  <span
-                    className={`text-[10px] font-black uppercase tracking-widest transition-colors ${
-                      showLayoutDetails
-                        ? "text-secondary"
-                        : "text-base-content/40"
-                    }`}
-                  >
-                    Okuma Sırası
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
         <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
           <div className="p-1 join bg-base-200/50">
@@ -165,22 +83,11 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
               <span className="hidden sm:inline">Güven</span>
             </button>
           </div>
-
-          <div className="w-px h-4 bg-base-content/10" />
-
-          <ZoomController
-            zoom={zoom}
-            onZoomIn={onZoomIn}
-            onZoomOut={onZoomOut}
-            onResetZoom={onResetZoom}
-            onFitContent={onFitContent}
-            onScroll={onScroll}
-          />
         </div>
       </div>
 
       {/* Labels Management Accordion */}
-      {(allLabels.length > 0 || availableLabels.length > 0) && (
+      {(allLabels.length > 0 || availableLabels.length > 0 || viewMode === "layout-blocks") && (
         <details className="overflow-hidden border rounded-lg collapse collapse-arrow bg-base-200/30 border-base-content/5 group">
           <summary className="flex items-center min-h-0 gap-3 px-3 py-2 text-xs font-black transition-colors cursor-pointer collapse-title hover:bg-base-content/5">
             <Layers size={16} className="text-secondary" />
@@ -203,6 +110,54 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             )}
           </summary>
           <div className="collapse-content pb-2! px-2! flex flex-col gap-2 mt-1">
+            {/* View Settings section */}
+            {viewMode === "layout-blocks" && (
+              <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/50 border border-base-content/5">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <Layers size={14} className="text-secondary" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                    Görünüm Ayarları
+                  </span>
+                </div>
+                <div
+                  className="flex items-center gap-2 px-2 py-1 transition-all rounded-lg cursor-pointer bg-secondary/5 hover:bg-secondary/10 group/toggle"
+                  onClick={() => setShowLayoutDetails(!showLayoutDetails)}
+                  title={
+                    showLayoutDetails
+                      ? "Okuma sırası numarasını gizle"
+                      : "Okuma sırası numarasını göster"
+                  }
+                >
+                  <div
+                    className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${
+                      showLayoutDetails ? "bg-secondary" : "bg-base-content/20"
+                    }`}
+                  >
+                    <div
+                      className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all duration-300 shadow-sm"
+                      style={{ left: showLayoutDetails ? "18px" : "2px" }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {showLayoutDetails ? (
+                      <Eye size={12} className="text-secondary" />
+                    ) : (
+                      <EyeOff size={12} className="text-base-content/40" />
+                    )}
+                    <span
+                      className={`text-[10px] font-black uppercase tracking-widest transition-colors ${
+                        showLayoutDetails
+                          ? "text-secondary"
+                          : "text-base-content/40"
+                      }`}
+                    >
+                      Okuma Sırası
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Global section toggle — all pages */}
             {allLabels.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 rounded-lg bg-base-200/60 border border-base-content/5">

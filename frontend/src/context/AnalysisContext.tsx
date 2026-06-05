@@ -77,6 +77,8 @@ interface AnalysisContextType {
   ) => void;
   /** Reset all label filters (local and global) */
   resetFilters: () => void;
+  /** Average confidence score (0-1) for all text lines in the current page */
+  averageConfidence: number;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -284,6 +286,17 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     [pageNumber],
   );
 
+  const averageConfidence = useMemo(() => {
+    if (!data?.layout?.text_lines || data.layout.text_lines.length === 0) {
+      return 0;
+    }
+    const total = data.layout.text_lines.reduce(
+      (acc, line) => acc + (line.confidence ?? 0),
+      0,
+    );
+    return total / data.layout.text_lines.length;
+  }, [data]);
+
   const value = useMemo(
     () => ({
       data,
@@ -312,6 +325,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       pageHiddenLabels,
       setPageHiddenLabels,
       resetFilters,
+      averageConfidence,
     }),
     [
       data,
@@ -333,6 +347,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setPageHiddenLabels,
       setHiddenLabels,
       resetFilters,
+      averageConfidence,
     ],
   );
 

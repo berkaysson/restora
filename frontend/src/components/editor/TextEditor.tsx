@@ -7,6 +7,8 @@ import { useTextEditorLogic } from "./hooks";
 // Components
 import { EditorEmptyState, EditorHeader } from "./components";
 import { PositionedView, ListView, LayoutBlocksView, ConfidenceView } from "./views";
+import { ZoomController } from "../common/ZoomController";
+import { PageNavigator } from "../common/PageNavigator";
 
 /**
  * TextEditor component for viewing and editing OCR-detected text.
@@ -51,6 +53,7 @@ export const TextEditor: React.FC = () => {
     toggleGlobalLabel,
     allLabels,
     resetFilters,
+    averageConfidence,
 
     // Refs
     scrollContainerRef,
@@ -74,19 +77,8 @@ export const TextEditor: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-base-100">
+    <div className="relative flex flex-col w-full h-full bg-base-100">
       <EditorHeader
-        lineCount={textLines.length}
-        blockCount={layoutBlocks?.length ?? 0}
-        width={width}
-        height={height}
-        hasDimensions={hasDimensions}
-        zoom={zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
-        onFitContent={handleFitToPage}
-        onScroll={scrollBy}
         availableLabels={availableLabels}
         hiddenLabels={hiddenLabels}
         onToggleLabel={toggleLabel}
@@ -183,6 +175,37 @@ export const TextEditor: React.FC = () => {
             onDeleteLine={deleteTextLine}
           />
         )}
+      </div>
+
+      <div className="absolute z-20 flex items-center gap-2 left-4 bottom-3">
+        {/* Stats and Navigation Island */}
+        <div className="flex items-center gap-3 p-1.5 px-3 border shadow-2xl bg-base-300/90 backdrop-blur-xl rounded-2xl border-white/10 ring-1 ring-black/20">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-mono text-xs font-black leading-tight tracking-tighter uppercase text-base-content/85">
+              {viewMode === "text-lines"
+                ? `${textLines.length} SATIR`
+                : viewMode === "layout-blocks"
+                  ? `${layoutBlocks?.length ?? 0} BLOK`
+                  : viewMode === "confidence"
+                    ? `%${Math.round(averageConfidence * 100)} GÜVEN`
+                    : `${textLines.length} SATIR`}
+            </span>
+            <span className="font-mono text-[10px] font-bold leading-tight text-base-content/60">
+              {hasDimensions ? `${width}x${height}px` : "RAW FLOW"}
+            </span>
+          </div>
+          <div className="w-px h-5 bg-base-content/10" />
+          <PageNavigator />
+        </div>
+
+        <ZoomController
+          zoom={zoom}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetZoom={handleResetZoom}
+          onFitContent={handleFitToPage}
+          onScroll={scrollBy}
+        />
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ export const useTextEditorLogic = () => {
     toggleGlobalLabel,
     allLabels,
     resetFilters,
+    averageConfidence,
   } = useAnalysis();
 
   const [editText, setEditText] = useState("");
@@ -167,6 +168,7 @@ export const useTextEditorLogic = () => {
     toggleGlobalLabel,
     allLabels,
     resetFilters,
+    averageConfidence,
     
     // Refs
     scrollContainerRef,
