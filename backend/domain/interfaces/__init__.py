@@ -83,3 +83,10 @@ class INotificationService(ABC):
         """Tüm bağlı istemcilere veya belirli bir job_id grubuna bildirim gönderir."""
         pass
 
+
+class ILogger(ABC):
+    @abstractmethod
+    async def log(self, message: str, source: str = "backend") -> None:
+        """Broadcast a log message to clients."""
+        pass
+

@@ -6,6 +6,7 @@ from infrastructure.notifications.websocket_notification_service import (
     WebSocketNotificationService,
 )
 from infrastructure.ocr.surya_ocr_engine import SuryaOCREngine
+from infrastructure.logging.websocket_logger import WebSocketLogger
 from application.use_cases.upload_document import UploadDocumentUseCase
 from application.use_cases.process_page import ProcessPageUseCase
 from application.use_cases.reprocess_document import ReprocessDocumentUseCase
@@ -13,6 +14,7 @@ from application.use_cases.list_documents import ListDocumentsUseCase
 from application.use_cases.get_document import GetDocumentUseCase
 from application.use_cases.delete_document import DeleteDocumentUseCase
 from application.use_cases.cancel_document import CancelDocumentUseCase
+from application.use_cases.ingest_external_log import IngestExternalLogUseCase
 
 # Singletons
 _repository_instance = None
@@ -20,6 +22,7 @@ _storage_instance = None
 _task_queue_instance = None
 _notification_service_instance = None
 _ocr_engine_instance = None
+_logger_instance = None
 
 
 def get_repository() -> SqliteDocumentRepository:
@@ -127,3 +130,16 @@ def get_cancel_document_use_case(
     ),
 ) -> CancelDocumentUseCase:
     return CancelDocumentUseCase(repository, storage, task_queue, notification_service)
+
+
+def get_logger() -> WebSocketLogger:
+    global _logger_instance
+    if _logger_instance is None:
+        _logger_instance = WebSocketLogger()
+    return _logger_instance
+
+
+def get_ingest_external_log_use_case(
+    logger: WebSocketLogger = Depends(get_logger),
+) -> IngestExternalLogUseCase:
+    return IngestExternalLogUseCase(logger)
